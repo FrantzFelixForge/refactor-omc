@@ -12,9 +12,11 @@
     </h1>
     <!-- redirect_uri for native apps -->
     <!-- urn:ietf:wg:oauth:2.0:oob& -->
-    <a href="https://app.asana.com/-/oauth_authorize?client_id=1202402089879179&redirect_uri=https://refactor-omc.herokuapp.com/api&response_type=code&state=thisIsARandomString&code_challenge_method=S256&code_challenge=671608a33392cee13585063953a86d396dffd15222d83ef958f43a2804ac7fb2
-&scope=default">
-        <button>Connect with Asana</button>
+    <a href="https://app.asana.com/-/oauth_authorize?response_type=code&client_id=1202402089879179&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fsuccess&state=RandomString">
+        <button>Connect with Asana (LocalHost)</button>
+    </a>
+    <a href="https://app.asana.com/-/oauth_authorize?response_type=code&client_id=1202402089879179&redirect_uri=https%3A%2F%2Frefactor-omc.herokuapp.com%2Fapi&state=RandomString">
+        <button>Connect with Asana (Heroku)</button>
     </a>
 </body>
 </html>
