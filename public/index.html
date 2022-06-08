@@ -5,6 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OMC</title>
+    <script defer src="./js/bearerToken.js"></script>
 </head>
 <body>
     <h1>
@@ -12,7 +13,7 @@
     </h1>
     <!-- redirect_uri for native apps -->
     <!-- urn:ietf:wg:oauth:2.0:oob& -->
-    <a href="https://app.asana.com/-/oauth_authorize?response_type=code&client_id=1202402089879179&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fsuccess&state=RandomString">
+    <a href="https://app.asana.com/-/oauth_authorize?response_type=code&client_id=1202402089879179&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2F&state=RandomString">
         <button>Connect with Asana (LocalHost)</button>
     </a>
     <a href="https://app.asana.com/-/oauth_authorize?response_type=code&client_id=1202402089879179&redirect_uri=https%3A%2F%2Frefactor-omc.herokuapp.com%2Fapi&state=RandomString">
