@@ -1,7 +1,7 @@
 const router = require("express").Router();
 const fetch = require("node-fetch");
 require(`dotenv`).config();
-
+//Only works when being redirect to from asana auth endpoint
 router.get(`/authCode`, function (req, res) {
   console.log(
     `Api /authCode endpoint. The auth code is: ${req.query.code} The state is: '${req.query.state}'`
@@ -29,11 +29,10 @@ router.post(`/bearerToken`, async function (req, res) {
     const data = await response.json();
 
     console.log(data);
+    res.json(data);
   } catch (err) {
     console.log(err);
   }
-
-  res.json(data);
 });
 
 module.exports = router;
