@@ -10,8 +10,8 @@ async function postDataSync(url, data) {
     },
     body: JSON.stringify(data),
   });
-
-  return await response.json();
+  const result = await response.json();
+  return result;
 }
 
 taskFormEl.addEventListener("submit", function (e) {
