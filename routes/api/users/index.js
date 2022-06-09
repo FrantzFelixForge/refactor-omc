@@ -18,6 +18,10 @@ router.get("/", function (req, res) {
 });
 
 router.get(`/me`, async function (req, res) {
+  //user-id -> 1202402171924303
+  //workSpace-id -> 1111138376302363
+  //team(engineering)-id -> 1202402175058585
+  //refactoringOMCProject-id -> 1202402175058587
   const response = await fetch("https://app.asana.com/api/1.0/users/me", {
     method: "GET",
     headers: {
