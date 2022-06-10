@@ -4,7 +4,23 @@ const fetch = require(`node-fetch`);
 require(`dotenv`).config();
 
 const refactoringOMCProjectId = 1202402175058587;
-
+function getDate() {
+  const date = new Date();
+  let month;
+  let day;
+  if (date.getMonth().toString().length < 2) {
+    month = "0" + (date.getMonth() + 1);
+  } else {
+    month = date.getMonth() + 1;
+  }
+  if (date.getDate().toString().length < 2) {
+    day = "0" + date.getDate();
+  } else {
+    day = date.getDate();
+  }
+  const todaysDate = `${date.getFullYear()}-${month}-${day}`;
+  return todaysDate;
+}
 router.get("/", async function (req, res) {
   const response = await fetch(
     `https://app.asana.com/api/1.0/projects/${refactoringOMCProjectId}/tasks`,
@@ -22,23 +38,22 @@ router.get("/", async function (req, res) {
   res.json(data);
 });
 router.post("/", async function (req, res) {
+  const todaysDate = getDate();
   const newTask = {
     data: {
       approval_status: "pending",
-      assignee: "1202402171924303",
+      assignee: `${req.body.assigneeGid}`,
       assignee_status: "upcoming",
       completed: false,
-      due_on: "2023-09-15",
-      html_notes:
-        "<body>Mittens <em>really</em> likes the stuff from Humboldt.</body>",
+      due_on: `${req.body.taskCompletionDate}`,
       liked: true,
       name: `${req.body.taskName}`,
-      notes: "Mittens really likes the stuff from Humboldt.",
-      projects: ["1202402175058587"],
+      notes: `${req.body.taskDescription}`,
+      projects: [`${req.body.projectGid}`],
       resource_subtype: "default_task",
-      start_on: "2023-09-14",
+      start_on: todaysDate,
       parent: null,
-      workspace: "1111138376302363",
+      workspace: `${req.body.workspaceGid}`,
     },
   };
   try {
