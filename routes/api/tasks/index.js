@@ -37,23 +37,47 @@ router.get("/", async function (req, res) {
   console.log(data);
   res.json(data);
 });
+
+/*
+Example of body
+{ 
+	"workspaceGID": 1111138376302363,
+ "teamGID": 1202402175058585,
+	"projectGID": 1202402175058587,
+	"assigneeGID": 1202402171924303,
+	"id": "DT22-6826-A",
+	"issuer": "SpaceX",
+	"broker": "Gordon-Rogoff",
+	"operations": "Hutler",
+	"buyer": "Kenny",
+	"seller": "Confidential91",
+	"quantity": 14286,
+	"price": 70.00,
+	"type": "Fund Direct",
+	"total": 1000020.00,
+	"commission": 50000.00,
+	"date": "06-06-2022",
+	"buyerStatus": "NO ACTION",
+	"sellerStatus": "NO ACTION"
+}
+*/
 router.post("/", async function (req, res) {
   const todaysDate = getDate();
   const newTask = {
     data: {
       approval_status: "pending",
-      assignee: `${req.body.assigneeGid}`,
+      assignee: `${req.body.assigneeGID}`,
       assignee_status: "upcoming",
       completed: false,
-      due_on: `${req.body.taskCompletionDate}`,
-      liked: true,
-      name: `${req.body.taskName}`,
-      notes: `${req.body.taskDescription}`,
-      projects: [`${req.body.projectGid}`],
+      // due_on: `${req.body.taskCompletionDate}`,
+      //liked: true,
+      name: `${req.body.issuer} | ${req.body.seller}/${req.body.buyer} | $${req.body.price}`,
+      notes: `Term Sheet notes here`,
+      projects: [`${req.body.projectGID}`],
       resource_subtype: "default_task",
-      start_on: todaysDate,
+      //start_on: todaysDate,
       parent: null,
-      workspace: `${req.body.workspaceGid}`,
+      workspace: `${req.body.workspaceGID}`,
     },
   };
   try {
