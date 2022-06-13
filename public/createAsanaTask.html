@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script defer src="./js/createAsanaTask.js"></script>
+    <link rel="stylesheet" href="./css/createAsanaTask.css">
+</head>
+<body style="background-color:lightgreen;">
+    <h1>Creating a Task</h1>
+    <form id ="taskForm" action="">
+        <label for="workspaceSelect">What workplace is this for?</label>
+        <select name="workspaceSelect" id="workspaceSelect"></select>
+        <label for="teamSelect">What team is this for?</label>
+        <select name="teamSelect" id="teamSelect"></select>
+        <label for="projectSelect">What project is this for?</label>
+        <select name="projectSelect" id="projectSelect"></select>
+        <label for="assigneeSelect">Who is this task assigned too?</label>
+        <select name="assigneeSelect" id="assigneeSelect"></select>
+        
+        <label for="taskNameInput">What is the Task Name?</label>
+        <input id ="taskNameInput" name="taskNameInput" placeholder="Task Name" type="text">
+        <label for="taskDescriptionTextArea">What is the Task Description?</label>
+        <textarea id ="taskDescriptionTextArea" name="taskDescriptionTextArea" placeholder="Task Description" type="text"></textarea>
+        <label for="taskCompletionDate">When is the task's due date?</label>
+        <input type="date" name="taskCompletionDate" id="taskCompletionDate">
+        <br>
+        <button>Submit Task</button>
+    </form>
+    
+</body>
+</html>
