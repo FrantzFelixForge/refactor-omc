@@ -39,30 +39,6 @@ router.get("/", async function (req, res) {
 });
 
 /*
-Example of body
-{ 
-	"workspaceGID": 1111138376302363,
- "teamGID": 1202402175058585,
-	"projectGID": 1202402175058587,
-	"assigneeGID": 1202402171924303,
-	"id": "DT22-6826-A",
-	"issuer": "SpaceX",
-	"broker": "Gordon-Rogoff",
-	"operations": "Hutler",
-	"buyer": "Kenny",
-	"seller": "Confidential91",
-	"quantity": 14286,
-	"price": 70.00,
-	"type": "Fund Direct",
-	"total": 1000020.00,
-	"commission": 50000.00,
-	"date": "06-06-2022",
-	"buyerStatus": "NO ACTION",
-	"sellerStatus": "NO ACTION"
-}
-*/
-
-/*
 Custom Field example   
  {
       "gid": "1202439111719844",
@@ -126,6 +102,7 @@ Custom Field example
 } */
 router.post("/", async function (req, res) {
   const todaysDate = getDate();
+
   const newTask = {
     data: {
       approval_status: "pending",
@@ -141,6 +118,7 @@ router.post("/", async function (req, res) {
       //start_on: todaysDate,
       parent: null,
       workspace: `${req.body.workspaceGID}`,
+      custom_fields: req.body.custom_fields,
     },
   };
   try {
