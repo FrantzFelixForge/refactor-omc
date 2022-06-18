@@ -4,30 +4,6 @@ const fetch = require(`node-fetch`);
 require(`dotenv`).config();
 
 /*
-Example of body
-{ 
-	"workspaceGID": 1111138376302363,
- "teamGID": 1202402175058585,
-	"projectGID": 1202402175058587,
-	"assigneeGID": 1202402171924303,
-	"id": "DT22-6826-A",
-	"issuer": "SpaceX",
-	"broker": "Gordon-Rogoff",
-	"operations": "Hutler",
-	"buyer": "Kenny",
-	"seller": "Confidential91",
-	"quantity": 14286,
-	"price": 70.00,
-	"type": "Fund Direct",
-	"total": 1000020.00,
-	"commission": 50000.00,
-	"date": "06-06-2022",
-	"buyerStatus": "NO ACTION",
-	"sellerStatus": "NO ACTION"
-}
-*/
-
-/*
 Custom Field example   
  {
       "gid": "1202439111719844",
@@ -89,63 +65,110 @@ Custom Field example
       "resource_type": "custom_field_setting"
     
 } */
-router.post("/", async function (req, res) {
-  const newField = {
-    data: {
-      currency_code: "EUR",
-      //   custom_label: "gold pieces",
-      //   custom_label_position: "suffix",
-      description: "Development team priority",
-      enabled: true,
-      //   enum_options: [
-      //     {
-      //       color: "blue",
-      //       enabled: true,
-      //       name: "Low",
-      //     },
-      //   ],
-      //   enum_value: {
-      //     color: "blue",
-      //     enabled: true,
-      //     name: "Low",
-      //   },
-      format: "currency",
-      has_notifications_enabled: true,
-      //   multi_enum_values: [
-      //     {
-      //       color: "blue",
-      //       enabled: true,
-      //       name: "Low",
-      //     },
-      //   ],
-      name: "Share Price$$$",
-      //   number_value: 5.2,
-      precision: 2,
-      resource_subtype: "number",
-      //   text_value: "Some Value",
-      workspace: "1111138376302363",
-    },
-  };
-  try {
-    const response = await fetch(
-      `https://app.asana.com/api/1.0/custom_fields`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.PERSONAL_ACCESS_TOKEN}`,
-        },
-        body: JSON.stringify(newField),
-      }
-    );
-    const data = await response.json();
+router.get("/settings", async function (req, res) {
+  const client = asana.Client.create().useAccessToken(
+    process.env.PERSONAL_ACCESS_TOKEN
+  );
 
-    //console.log(data);
-    res.status(201).json(data);
-  } catch (err) {
-    console.error(err);
-    res.status(400).json(err);
-  }
+  client.customFieldSettings
+    .getCustomFieldSettingsForProject(1202402175058587)
+    .then((result) => {
+      res.json(result);
+    });
+});
+router.get("/", async function (req, res) {
+  const client = asana.Client.create().useAccessToken(
+    process.env.PERSONAL_ACCESS_TOKEN
+  );
+  client.customFields
+    .getCustomField(1202447185762214, {
+      opt_pretty: true,
+    })
+    .then((result) => {
+      res.json(result);
+    });
+});
+router.put("/", async function (req, res) {
+  const client = asana.Client.create().useAccessToken(
+    process.env.PERSONAL_ACCESS_TOKEN
+  );
+  client.customFields
+    .updateCustomField(1202448145530352, {
+      enum_value: {
+        color: "red",
+        enabled: true,
+        name: "High",
+      },
+    })
+    .then((result) => {
+      res.json(result);
+    });
+});
+
+router.post("/", async function (req, res) {
+  // const newField = {
+  //   data: {
+  //     format: "currency",
+  //     name: "Price",
+  //     precision: 2,
+  //     resource_subtype: "number",
+  //     workspace: "1111138376302363",
+  //   },
+  // };
+  // try {
+  //   const response = await fetch(
+  //     `https://app.asana.com/api/1.0/custom_fields`,
+  //     {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         Authorization: `Bearer ${process.env.PERSONAL_ACCESS_TOKEN}`,
+  //       },
+  //       body: JSON.stringify(newField),
+  //     }
+  //   );
+  //   const data = await response.json();
+  //   //console.log(data);
+  //   res.status(201).json(data);
+  // } catch (err) {
+  //   console.error(err);
+  //   res.status(400).json(err);
+  // }
+  const client = asana.Client.create().useAccessToken(
+    process.env.PERSONAL_ACCESS_TOKEN
+  );
+  const newField = {
+    name: "Price",
+    precision: 2,
+    resource_subtype: "number",
+    format: "currency",
+    workspace: "1111138376302363",
+  };
+  //   console.log(req.body)
+  client.customFields
+    .createCustomField(req.body)
+    .then((result) => {
+      console.log(result);
+      res.json(result);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
+});
+router.delete("/", async function (req, res) {
+  const client = asana.Client.create().useAccessToken(
+    process.env.PERSONAL_ACCESS_TOKEN
+  );
+  client.customFields
+    .deleteCustomField(req.body.customFieldGID)
+    .then((result) => {
+      res.json(result);
+      console.log(result);
+    })
+    .catch((err) => {
+      console.log(err);
+      res.json(err);
+    });
 });
 
 module.exports = router;
