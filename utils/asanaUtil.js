@@ -1,7 +1,15 @@
 const fetch = require(`node-fetch`);
 const asana = require(`asana`);
 const inquirer = require("inquirer");
-
+function choices(data) {
+  const choiceObj = {};
+  const choiceArray = [];
+  data.map(function (item) {
+    choiceObj[item.name] = item.gid;
+    choiceArray.push(item.name);
+  });
+  return { choiceArray, choiceObj };
+}
 async function findWorkspace() {
   try {
     const response = await fetch(
@@ -15,12 +23,7 @@ async function findWorkspace() {
       }
     );
     const { data } = await response.json();
-    const choiceObj = {};
-    const choiceArray = [];
-    data.map(function (workspace) {
-      choiceObj[workspace.name] = workspace.gid;
-      choiceArray.push(workspace.name);
-    });
+    const { choiceArray, choiceObj } = choices(data);
     let answers = await inquirer.prompt([
       {
         type: "list",
@@ -54,12 +57,7 @@ async function findTeam(workspaceGID, userGID) {
       opt_fields: "gid",
       opt_fields: "name",
     });
-    const choiceObj = {};
-    const choiceArray = [];
-    data.map(function (team) {
-      choiceObj[team.name] = team.gid;
-      choiceArray.push(team.name);
-    });
+    const { choiceArray, choiceObj } = choices(data);
     let answers = await inquirer.prompt([
       {
         type: "list",
@@ -85,12 +83,7 @@ async function findProject(teamGID) {
       opt_fields: "gid",
       opt_fields: "name",
     });
-    const choiceObj = {};
-    const choiceArray = [];
-    data.map(function (project) {
-      choiceObj[project.name] = project.gid;
-      choiceArray.push(project.name);
-    });
+    const { choiceArray, choiceObj } = choices(data);
     let answers = await inquirer.prompt([
       {
         type: "list",
@@ -136,7 +129,7 @@ async function addDeal(workspaceGID, projectGID, userGID, dealInfo) {
     });
     const data = await response.json();
 
-    console.log(data);
+    // console.log(data);
     //res.status(201).json(data);
     return data;
   } catch (err) {
@@ -146,6 +139,8 @@ async function addDeal(workspaceGID, projectGID, userGID, dealInfo) {
 }
 async function getDeal() {}
 
+async function getTasksInSection(section) {}
+
 module.exports = {
   findWorkspace,
   findUser,
@@ -154,3 +149,14 @@ module.exports = {
   addDeal,
   getDeal,
 };
+
+// function makeChoices(dataArray){
+//     const choiceObj = {};
+//     const choiceArray = [];
+//     data.map(function (dataArray) {
+//       choiceObj[dataArray.name] = dataArray.gid;
+//       choiceArray.push(dataArray.name);
+//     });
+//     return choiceArray;
+
+// }
