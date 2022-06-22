@@ -105,6 +105,87 @@ async function findTeam(workspaceGID, userGID) {
 
   // client.teams.dispatchGet();
 }
+async function findProject(teamGID) {
+  const client = asana.Client.create().useAccessToken(
+    process.env.PERSONAL_ACCESS_TOKEN
+  );
+  try {
+    const { data } = await client.projects.getProjectsForTeam(teamGID, {
+      opt_fields: "gid",
+      opt_fields: "name",
+    });
+    const choiceObj = {};
+    const choiceArray = [];
+    data.map(function (project) {
+      choiceObj[project.name] = project.gid;
+      choiceArray.push(project.name);
+    });
+    let answers = await inquirer.prompt([
+      {
+        type: "list",
+        name: "project",
+        message: "What project did you want to select?",
+        choices: choiceArray,
+      },
+    ]);
+    console.log(choiceObj);
+    return choiceObj[answers.project];
+  } catch (error) {
+    console.log(error);
+    return error;
+  }
+}
+
+async function mainMenu() {
+  let answers = await inquirer.prompt([
+    {
+      type: "list",
+      name: "menu",
+      message: "What do you want to do next?",
+      choices: ["Get all deals?", "Add a deal?"],
+    },
+  ]);
+  return answers;
+}
+// async function addDeal(workspaceGID, userGID, projectGID, dealInfo) {
+//   const newTask = {
+//     data: {
+//       approval_status: "pending",
+//       assignee: `${userGID}`,
+//       assignee_status: "upcoming",
+//       completed: false,
+//       // due_on: `${req.body.taskCompletionDate}`,
+//       //liked: true,
+//       name: `${dealInfo.issuer} | ${dealInfo.seller}/${dealInfo.buyer} | $${dealInfo.price}`,
+//       notes: `Term Sheet notes here`,
+//       projects: [`${projectGID}`],
+//       resource_subtype: "default_task",
+//       //start_on: todaysDate,
+//       parent: null,
+//       workspace: `${workspaceGID}`,
+//       //custom_fields: req.body.custom_fields,
+//     },
+//   };
+//   try {
+//     const response = await fetch(`https://app.asana.com/api/1.0/tasks`, {
+//       method: "POST",
+//       headers: {
+//         "Content-Type": "application/json",
+//         Authorization: `Bearer ${process.env.PERSONAL_ACCESS_TOKEN}`,
+//       },
+//       body: JSON.stringify(newTask),
+//     });
+//     const data = await response.json();
+
+//     //console.log(data);
+//     //res.status(201).json(data);
+//     return data;
+//   } catch (err) {
+//     console.error(err);
+//     res.status(400).json(err);
+//   }
+// }
+// async function getDeal() {}
 
 async function promptUser() {
   let runAgain = true;
@@ -113,7 +194,15 @@ async function promptUser() {
       const workspaceGID = await findWorkspace();
       const userGID = await findUser();
       const teamGID = await findTeam(workspaceGID, userGID);
-      console.log(teamGID);
+      const projectGID = await findProject(teamGID);
+      console.log(projectGID);
+      const nextInteraction = await mainMenu();
+
+      switch (nextInteraction) {
+        case "Add a deal?":
+          // addDeal(userGID);
+          break;
+      }
       let answers = await inquirer.prompt([
         {
           type: "list",
