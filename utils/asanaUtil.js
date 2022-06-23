@@ -1,7 +1,6 @@
 const fetch = require(`node-fetch`);
 const asana = require(`asana`);
 const inquirer = require("inquirer");
-const { get } = require("../routes");
 
 const client = asana.Client.create().useAccessToken(
   process.env.PERSONAL_ACCESS_TOKEN
@@ -133,7 +132,14 @@ async function addDeal(workspaceGID, projectGID, userGID, dealInfo) {
     res.status(400).json(err);
   }
 }
-async function getDeal() {}
+async function getDeal(projectGID) {
+  const { data } = await client.tasks.getTasksForProject(projectGID, {
+    opt_fields: "gid",
+    opt_fields: "name",
+  });
+  console.table(data);
+  return data;
+}
 
 async function getSectionList(projectGID) {
   const { data } = await client.sections.getSectionsForProject(projectGID, {
