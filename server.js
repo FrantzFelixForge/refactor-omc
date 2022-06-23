@@ -89,7 +89,17 @@ async function promptUser() {
       switch (nextInteraction) {
         case "Add a deal.":
           console.log("Adding a deal...");
-          addDeal(workspaceGID, projectGID, userGID, dealInfo);
+          const results = await addDeal(
+            workspaceGID,
+            projectGID,
+            userGID,
+            dealInfo
+          );
+          console.log(results);
+          break;
+        case "Get all deals.":
+          console.log("Getting all deals...");
+          await getDeal(projectGID);
           break;
         case "Get all deals in a section.":
           const { sectionGID, sectionName } = await getSectionList(projectGID);
