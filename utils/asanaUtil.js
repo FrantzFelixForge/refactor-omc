@@ -1,6 +1,11 @@
 const fetch = require(`node-fetch`);
 const asana = require(`asana`);
 const inquirer = require("inquirer");
+const { get } = require("../routes");
+
+const client = asana.Client.create().useAccessToken(
+  process.env.PERSONAL_ACCESS_TOKEN
+);
 function choices(data) {
   const choiceObj = {};
   const choiceArray = [];
@@ -38,9 +43,6 @@ async function findWorkspace() {
   }
 }
 async function findUser() {
-  const client = asana.Client.create().useAccessToken(
-    process.env.PERSONAL_ACCESS_TOKEN
-  );
   const currentUser = await client.users.me().then(function (me) {
     return me;
   });
@@ -48,9 +50,6 @@ async function findUser() {
   return currentUser.gid;
 }
 async function findTeam(workspaceGID, userGID) {
-  const client = asana.Client.create().useAccessToken(
-    process.env.PERSONAL_ACCESS_TOKEN
-  );
   try {
     const { data } = await client.teams.getTeamsForUser(`${userGID}`, {
       workspace: `${workspaceGID}`,
@@ -75,9 +74,6 @@ async function findTeam(workspaceGID, userGID) {
   // client.teams.dispatchGet();
 }
 async function findProject(teamGID) {
-  const client = asana.Client.create().useAccessToken(
-    process.env.PERSONAL_ACCESS_TOKEN
-  );
   try {
     const { data } = await client.projects.getProjectsForTeam(teamGID, {
       opt_fields: "gid",
@@ -139,7 +135,33 @@ async function addDeal(workspaceGID, projectGID, userGID, dealInfo) {
 }
 async function getDeal() {}
 
-async function getTasksInSection(section) {}
+async function getSectionList(projectGID) {
+  const { data } = await client.sections.getSectionsForProject(projectGID, {
+    opt_fields: "gid",
+    opt_fields: "name",
+  });
+  const { choiceArray, choiceObj } = choices(data);
+  let answers = await inquirer.prompt([
+    {
+      type: "list",
+      name: "sections",
+      message: "What section did you want to select?",
+      choices: choiceArray,
+    },
+  ]);
+  return {
+    sectionGID: choiceObj[answers.sections],
+    sectionName: answers.sections,
+  };
+}
+
+async function getTasksInSection(sectionGID) {
+  const { data } = await client.tasks.getTasksForSection(sectionGID, {
+    opt_fields: "gid",
+    opt_fields: "name",
+  });
+  return data;
+}
 
 module.exports = {
   findWorkspace,
@@ -148,6 +170,8 @@ module.exports = {
   findProject,
   addDeal,
   getDeal,
+  getSectionList,
+  getTasksInSection,
 };
 
 // function makeChoices(dataArray){
