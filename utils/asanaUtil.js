@@ -131,7 +131,6 @@ async function createSingleTag(workspaceGID, tagName) {
     name: tagName,
     workspace: workspaceGID,
   });
-  console.log(tag);
   return tag;
 }
 
@@ -149,58 +148,86 @@ async function getAllOpsTags(workspaceGID) {
   });
   return operationTagsArr;
 }
-async function createMissingTags(workspaceGID) {
+async function generateTags(workspaceGID) {
   const tagObjArray = await getAllOpsTags(workspaceGID);
   const tagArray = [];
   tagObjArray.forEach(function (tag) {
     tagArray.push(tag.name);
   });
-  console.log(tagArray);
-  //   tagArray.forEach(function (tag) {
-  //     setTimeout(function () {
-  //       deleteTag(tag.gid);
-  //     }, 3000);
-  //   });
+  //delete if I don't have all the tags
+  if (tagArray.length < 6) {
+    console.log("Some tags are missing, recreating now...");
+    tagObjArray.forEach(function (tag) {
+      setTimeout(function () {
+        deleteTag(tag.gid);
+      }, 3000);
+    });
+  }
 
   if (!tagArray.includes("__ISSUER__")) {
-    await createSingleTag(workspaceGID, "__ISSUER__");
-    console.log("Created tag Issuer");
+    const { name, gid } = await createSingleTag(workspaceGID, "__ISSUER__");
+    const tagObj = { name, gid };
+    tagObjArray.push(tagObj);
+    console.log(`Created tag __ISSUER__`, " \n", tagObj);
   }
   if (!tagArray.includes("__BUYER__")) {
-    await createSingleTag(workspaceGID, "__BUYER__");
-    console.log("Created tag Buyer");
+    const { name, gid } = await createSingleTag(workspaceGID, "__BUYER__");
+    const tagObj = { name, gid };
+    tagObjArray.push(tagObj);
+    console.log(`Created tag __BUYER__`, " \n", tagObj);
   }
   if (!tagArray.includes("__SELLER__")) {
-    await createSingleTag(workspaceGID, "__SELLER__");
-    console.log("Created tag Seller");
+    const { name, gid } = await createSingleTag(workspaceGID, "__SELLER__");
+    const tagObj = { name, gid };
+    tagObjArray.push(tagObj);
+    console.log(`Created tag __SELLER__`, " \n", tagObj);
   }
   if (!tagArray.includes("__LEGAL__")) {
-    await createSingleTag(workspaceGID, "__LEGAL__");
-    console.log("Created tag Legal");
+    const { name, gid } = await createSingleTag(workspaceGID, "__LEGAL__");
+    const tagObj = { name, gid };
+    tagObjArray.push(tagObj);
+    console.log(`Created tag __LEGAL__`, " \n", tagObj);
   }
   if (!tagArray.includes("__OPS__")) {
-    await createSingleTag(workspaceGID, "__OPS__");
-    console.log("Created tag Ops");
+    const { name, gid } = await createSingleTag(workspaceGID, "__OPS__");
+    const tagObj = { name, gid };
+    tagObjArray.push(tagObj);
+    console.log(`Created tag __OPS__`, " \n", tagObj);
   }
   if (!tagArray.includes("__DEAL__")) {
-    await createSingleTag(workspaceGID, "__DEAL__");
-    console.log("Created tag Deal");
+    const { name, gid } = await createSingleTag(workspaceGID, "__DEAL__");
+    const tagObj = { name, gid };
+    tagObjArray.push(tagObj);
+    console.log(`Created tag __DEAL__`, " \n", tagObj);
   }
-  //   console.log(tagsToMake);
-  //Issuer
-  //Buyer
-  //Seller
-  //Deal
-  //OPS
+
+  const tagsObj = {};
+  tagObjArray.map(function (tag) {
+    tagsObj[tag.name] = tag.gid;
+  });
+
+  return tagsObj;
 }
 async function deleteTag(tagGID) {
-  const res = await client.tags.deleteTag(tagGID);
-  console.log(res);
+  await client.tags.deleteTag(tagGID);
+  console.log(`Deleted tag ${tagGID}`);
 }
 
-async function generateTags() {}
-
-async function addDeal(workspaceGID, projectGID, userGID, dealInfo) {
+async function addDeal(
+  workspaceGID,
+  projectGID,
+  userGID,
+  tagObjArray,
+  dealInfo
+) {
+  const dealTypeCustomFieldGid = 1202448385422158;
+  const dealTypeGIDs = {
+    "Fund Direct": "1202448385422159",
+    Direct: "1202448385422161",
+    Redepmtion: "1202448385422162",
+    Transfer: "1202448385422163",
+    Forward: "1202448385422160",
+  };
   const newDeal = {
     data: {
       approval_status: "pending",
@@ -216,9 +243,14 @@ async function addDeal(workspaceGID, projectGID, userGID, dealInfo) {
       //start_on: todaysDate,
       parent: null,
       workspace: `${workspaceGID}`,
-      //custom_fields: req.body.custom_fields,
+      tags: [tagObjArray["__DEAL__"]],
+      custom_fields: {},
     },
   };
+  newDeal.data.custom_fields[dealTypeCustomFieldGid] =
+    dealTypeGIDs[dealInfo.type];
+
+  //console.log(newDeal);
   try {
     const response = await fetch(`https://app.asana.com/api/1.0/tasks`, {
       method: "POST",
@@ -239,7 +271,7 @@ async function addDeal(workspaceGID, projectGID, userGID, dealInfo) {
   }
 }
 async function getDeal(projectGID) {
-  console.dir(client.customFields.dispatchPost());
+  //console.dir(client.customFields.dispatchPost());
   const { data } = await client.tasks.getTasksForProject(projectGID, {
     opt_fields: "gid",
     opt_fields: "name",
@@ -268,7 +300,7 @@ async function getSectionList(projectGID) {
   };
 }
 
-async function getTasksInSection(sectionGID) {
+async function getDealsInSection(sectionGID) {
   const { data } = await client.tasks.getTasksForSection(sectionGID, {
     opt_fields: "gid",
     opt_fields: "name",
@@ -276,7 +308,7 @@ async function getTasksInSection(sectionGID) {
   return data;
 }
 
-async function createCustomField() {}
+// async function createCustomField() {}
 
 module.exports = {
   findWorkspace,
@@ -286,9 +318,9 @@ module.exports = {
   addDeal,
   getDeal,
   getSectionList,
-  getTasksInSection,
+  getDealsInSection,
   getAllOpsTags,
-  createMissingTags,
+  generateTags,
 };
 
 // function makeChoices(dataArray){
@@ -339,17 +371,17 @@ module.exports = {
 //     }
 //   }
 
-const body = {
-  data: {
-    currency_code: "EUR",
+// const body = {
+//   data: {
+//     currency_code: "EUR",
 
-    description: "Development team resting custom fields",
-    enabled: true,
-    format: "currency",
+//     description: "Development team resting custom fields",
+//     enabled: true,
+//     format: "currency",
 
-    name: "Money",
-    precision: 2,
-    resource_subtype: "number",
-    workspace: "1111138376302363",
-  },
-};
+//     name: "Money",
+//     precision: 2,
+//     resource_subtype: "number",
+//     workspace: "1111138376302363",
+//   },
+// };
