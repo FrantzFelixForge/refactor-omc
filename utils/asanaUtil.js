@@ -1,10 +1,35 @@
 const fetch = require(`node-fetch`);
 const asana = require(`asana`);
 const inquirer = require("inquirer");
-
+// TODO:
+// Create an Asana client. Do this per request since it keeps state that
+// shouldn't be shared across requests.
 const client = asana.Client.create().useAccessToken(
   process.env.PERSONAL_ACCESS_TOKEN
 );
+function randomColor() {
+  const tagColorArray = [
+    "dark-pink",
+    "dark-green",
+    "dark-blue",
+    "dark-red",
+    "dark-teal",
+    "dark-brown",
+    "dark-orange",
+    "dark-purple",
+    "dark-warm-gray",
+    "light-pink",
+    "light-green",
+    "light-blue",
+    "light-red",
+    "light-teal",
+    "light-brown",
+    "light-orange",
+    "light-purple",
+    "light-warm-gray",
+  ];
+  return tagColorArray[Math.floor(Math.random() * tagColorArray.length)];
+}
 function choices(data) {
   const choiceObj = {};
   const choiceArray = [];
@@ -93,6 +118,87 @@ async function findProject(teamGID) {
     return error;
   }
 }
+// different deal types
+// Fund Direct
+// Direct
+// Redemption
+// Transfer
+
+async function createSingleTag(workspaceGID, tagName) {
+  console.log(`Creating single tag ${tagName}`);
+  const tag = await client.tags.createTag({
+    color: randomColor(),
+    name: tagName,
+    workspace: workspaceGID,
+  });
+  console.log(tag);
+  return tag;
+}
+
+async function getAllOpsTags(workspaceGID) {
+  const { data } = await client.tags.getTags({
+    workspace: workspaceGID,
+    opt_fields: "gid",
+    opt_fields: "name",
+    limit: 100,
+  });
+  const operationTagsArr = data.filter(function (tag) {
+    if (tag.name.includes("__")) {
+      return true;
+    }
+  });
+  return operationTagsArr;
+}
+async function createMissingTags(workspaceGID) {
+  const tagObjArray = await getAllOpsTags(workspaceGID);
+  const tagArray = [];
+  tagObjArray.forEach(function (tag) {
+    tagArray.push(tag.name);
+  });
+  console.log(tagArray);
+  //   tagArray.forEach(function (tag) {
+  //     setTimeout(function () {
+  //       deleteTag(tag.gid);
+  //     }, 3000);
+  //   });
+
+  if (!tagArray.includes("__ISSUER__")) {
+    await createSingleTag(workspaceGID, "__ISSUER__");
+    console.log("Created tag Issuer");
+  }
+  if (!tagArray.includes("__BUYER__")) {
+    await createSingleTag(workspaceGID, "__BUYER__");
+    console.log("Created tag Buyer");
+  }
+  if (!tagArray.includes("__SELLER__")) {
+    await createSingleTag(workspaceGID, "__SELLER__");
+    console.log("Created tag Seller");
+  }
+  if (!tagArray.includes("__LEGAL__")) {
+    await createSingleTag(workspaceGID, "__LEGAL__");
+    console.log("Created tag Legal");
+  }
+  if (!tagArray.includes("__OPS__")) {
+    await createSingleTag(workspaceGID, "__OPS__");
+    console.log("Created tag Ops");
+  }
+  if (!tagArray.includes("__DEAL__")) {
+    await createSingleTag(workspaceGID, "__DEAL__");
+    console.log("Created tag Deal");
+  }
+  //   console.log(tagsToMake);
+  //Issuer
+  //Buyer
+  //Seller
+  //Deal
+  //OPS
+}
+async function deleteTag(tagGID) {
+  const res = await client.tags.deleteTag(tagGID);
+  console.log(res);
+}
+
+async function generateTags() {}
 
 async function addDeal(workspaceGID, projectGID, userGID, dealInfo) {
   const newDeal = {
@@ -133,6 +239,7 @@ async function addDeal(workspaceGID, projectGID, userGID, dealInfo) {
   }
 }
 async function getDeal(projectGID) {
+  console.dir(client.customFields.dispatchPost());
   const { data } = await client.tasks.getTasksForProject(projectGID, {
     opt_fields: "gid",
     opt_fields: "name",
@@ -169,6 +276,8 @@ async function getTasksInSection(sectionGID) {
   return data;
 }
 
+async function createCustomField() {}
+
 module.exports = {
   findWorkspace,
   findUser,
@@ -178,6 +287,8 @@ module.exports = {
   getDeal,
   getSectionList,
   getTasksInSection,
+  getAllOpsTags,
+  createMissingTags,
 };
 
 // function makeChoices(dataArray){
@@ -190,3 +301,55 @@ module.exports = {
 //     return choiceArray;
 
 // }
+
+// {
+//     "data": {
+//       "currency_code": "EUR",
+//       "custom_label": "gold pieces",
+//       "custom_label_position": "suffix",
+//       "description": "Development team priority",
+//       "enabled": true,
+//       "enum_options": [
+//         {
+//           "color": "blue",
+//           "enabled": true,
+//           "name": "Low"
+//         }
+//       ],
+//       "enum_value": {
+//         "color": "blue",
+//         "enabled": true,
+//         "name": "Low"
+//       },
+//       "format": "custom",
+//       "has_notifications_enabled": true,
+//       "multi_enum_values": [
+//         {
+//           "color": "blue",
+//           "enabled": true,
+//           "name": "Low"
+//         }
+//       ],
+//       "name": "Status",
+//       "number_value": 5.2,
+//       "precision": 2,
+//       "resource_subtype": "text",
+//       "text_value": "Some Value",
+//       "workspace": "1331"
+//     }
+//   }
+
+const body = {
+  data: {
+    currency_code: "EUR",
+
+    description: "Development team resting custom fields",
+    enabled: true,
+    format: "currency",
+
+    name: "Money",
+    precision: 2,
+    resource_subtype: "number",
+    workspace: "1111138376302363",
+  },
+};
