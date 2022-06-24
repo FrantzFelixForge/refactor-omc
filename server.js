@@ -14,8 +14,8 @@ const {
   addDeal,
   getDeal,
   getSectionList,
-  getTasksInSection,
-  createMissingTags,
+  getDealsInSection,
+  generateTags,
 } = require("./utils/asanaUtil");
 const { exit } = require("process");
 
@@ -38,19 +38,14 @@ async function mainMenu() {
       type: "list",
       name: "menu",
       message: "What do you want to do next?",
-      choices: [
-        "Get all deals.",
-        "Add a deal.",
-        "Get all deals in a section.",
-        "Get all tags.",
-      ],
+      choices: ["Get all deals.", "Add a deal.", "Get all deals in a section."],
     },
   ]);
   return answers.menu;
 }
 async function promptUser() {
   let runAgain = true;
-  // while (runAgain) {
+
   try {
     const dealInfo = {
       // workspaceGID: 1111138376302363,
@@ -84,11 +79,12 @@ async function promptUser() {
       // },
     };
     dealInfo["wireAmount"] = dealInfo.total + dealInfo.commission;
-
+    //TODO: try promise.all to run some of the concurrently.
     const workspaceGID = await findWorkspace();
     const userGID = await findUser();
     const teamGID = await findTeam(workspaceGID, userGID);
     const projectGID = await findProject(teamGID);
+    const tagsObj = await generateTags(workspaceGID);
     while (runAgain) {
       const nextInteraction = await mainMenu();
 
@@ -99,9 +95,10 @@ async function promptUser() {
             workspaceGID,
             projectGID,
             userGID,
+            tagsObj,
             dealInfo
           );
-          console.log(results);
+          console.log("Deal added --->", results);
           break;
         case "Get all deals.":
           console.log("Getting all deals...");
@@ -110,11 +107,7 @@ async function promptUser() {
         case "Get all deals in a section.":
           const { sectionGID, sectionName } = await getSectionList(projectGID);
           console.log(`Getting all tasks in ${sectionName}...`);
-          console.table(await getTasksInSection(sectionGID));
-          break;
-        case "Get all tags.":
-          console.log("Getting all tags...");
-          await createMissingTags(workspaceGID);
+          console.table(await getDealsInSection(sectionGID));
           break;
         default:
           console.log("Unknown interaction: " + nextInteraction);
@@ -135,7 +128,6 @@ async function promptUser() {
   } catch (error) {
     console.log(error);
   }
-  // }
 }
 
 promptUser();
