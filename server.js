@@ -15,6 +15,7 @@ const {
   getDeal,
   getSectionList,
   getTasksInSection,
+  createMissingTags,
 } = require("./utils/asanaUtil");
 const { exit } = require("process");
 
@@ -37,7 +38,12 @@ async function mainMenu() {
       type: "list",
       name: "menu",
       message: "What do you want to do next?",
-      choices: ["Get all deals.", "Add a deal.", "Get all deals in a section."],
+      choices: [
+        "Get all deals.",
+        "Add a deal.",
+        "Get all deals in a section.",
+        "Get all tags.",
+      ],
     },
   ]);
   return answers.menu;
@@ -105,6 +111,10 @@ async function promptUser() {
           const { sectionGID, sectionName } = await getSectionList(projectGID);
           console.log(`Getting all tasks in ${sectionName}...`);
           console.table(await getTasksInSection(sectionGID));
+          break;
+        case "Get all tags.":
+          console.log("Getting all tags...");
+          await createMissingTags(workspaceGID);
           break;
         default:
           console.log("Unknown interaction: " + nextInteraction);
