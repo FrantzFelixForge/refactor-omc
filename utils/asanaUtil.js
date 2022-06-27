@@ -118,11 +118,6 @@ async function findProject(teamGID) {
     return error;
   }
 }
-// different deal types
-// Fund Direct
-// Direct
-// Redemption
-// Transfer
 
 async function createSingleTag(workspaceGID, tagName) {
   console.log(`Creating single tag ${tagName}`);
@@ -213,15 +208,9 @@ async function deleteTag(tagGID) {
   console.log(`Deleted tag ${tagGID}`);
 }
 
-async function addDeal(
-  workspaceGID,
-  projectGID,
-  userGID,
-  tagObjArray,
-  dealInfo
-) {
+async function addDeal(workspaceGID, projectGID, userGID, tagsObj, dealInfo) {
   const dealTypeCustomFieldGid = 1202448385422158;
-  const dealTypeGIDs = {
+  const dealTypeEnumGIDs = {
     "Fund Direct": "1202448385422159",
     Direct: "1202448385422161",
     Redepmtion: "1202448385422162",
@@ -243,15 +232,16 @@ async function addDeal(
       //start_on: todaysDate,
       parent: null,
       workspace: `${workspaceGID}`,
-      tags: [tagObjArray["__DEAL__"]],
+      tags: [tagsObj["__DEAL__"]],
       custom_fields: {},
     },
   };
   newDeal.data.custom_fields[dealTypeCustomFieldGid] =
-    dealTypeGIDs[dealInfo.type];
+    dealTypeEnumGIDs[dealInfo.type];
 
   //console.log(newDeal);
   try {
+    //TODO: convert to built in asana method
     const response = await fetch(`https://app.asana.com/api/1.0/tasks`, {
       method: "POST",
       headers: {
@@ -260,14 +250,13 @@ async function addDeal(
       },
       body: JSON.stringify(newDeal),
     });
-    const data = await response.json();
-
+    const { data } = await response.json();
+    await addFundDealSubTasks(data.gid, workspaceGID, tagsObj);
     // console.log(data);
-    //res.status(201).json(data);
+
     return data;
   } catch (err) {
     console.error(err);
-    res.status(400).json(err);
   }
 }
 async function getDeal(projectGID) {
@@ -278,6 +267,214 @@ async function getDeal(projectGID) {
   });
   console.table(data);
   return data;
+}
+async function addFundDealSubTasks(taskGID, workspaceGID, tagsObj) {
+  let actions = [];
+  let actionCount = 0;
+  const requestsArray = [];
+  const responseArray = [];
+  const subTaskArray = [
+    {
+      tagName: "__OPS__",
+      tagGid: "",
+      name: "Assign yourself to the trade",
+      orderNumber: 1,
+      subTaskGid: "",
+    },
+    {
+      tagName: "__OPS__",
+      tagGid: "",
+      name: "Send CEA + buy-side fund document",
+      orderNumber: 2,
+      subTaskGid: "",
+    },
+    {
+      tagName: "__OPS__",
+      tagGid: "",
+      name: "Send wire instructions once KYC is approved",
+      orderNumber: 3,
+      subTaskGid: "",
+    },
+    {
+      tagName: "__BUYER__",
+      tagGid: "",
+      name: "Buy-side funds received",
+      orderNumber: 4,
+      subTaskGid: "",
+    },
+    {
+      tagName: "__OPS__",
+      tagGid: "",
+      name: "Send CEA + wire instructions template to sell-side",
+      orderNumber: 5,
+      subTaskGid: "",
+    },
+    {
+      tagName: "__OPS__",
+      tagGid: "",
+      name: "Send PA and to sell-side and Assure once KYC is approved",
+      orderNumber: 6,
+      subTaskGid: "",
+    },
+    {
+      tagName: "__OPS__",
+      tagGid: "",
+      name: "Submit to Issuer",
+      orderNumber: 7,
+      subTaskGid: "",
+    },
+    {
+      tagName: "__ISSUER__",
+      tagGid: "",
+      name: "ROFR waived",
+      orderNumber: 8,
+      subTaskGid: "",
+    },
+    {
+      tagName: "__OPS__",
+      tagGid: "",
+      name: "Review STA, if new or updated send to Legal to approve",
+      orderNumber: 9,
+      subTaskGid: "",
+    },
+    {
+      tagName: "__LEGAL__",
+      tagGid: "",
+      name: "STA approved by Forge Legal",
+      orderNumber: 10,
+      subTaskGid: "",
+    },
+    {
+      tagName: "__SELLER__",
+      tagGid: "",
+      name: "STA signed by shareholder and Assure & returned to company",
+      orderNumber: 11,
+      subTaskGid: "",
+    },
+    {
+      tagName: "__ISSUER__",
+      tagGid: "",
+      name: "STA countersigned by company",
+      orderNumber: 12,
+      subTaskGid: "",
+    },
+    {
+      tagName: "__OPS__",
+      tagGid: "",
+      name: "Wire to Seller",
+      orderNumber: 13,
+      subTaskGid: "",
+    },
+    {
+      tagName: "__SELLER__",
+      tagGid: "",
+      name: "Seller confirmed receipt",
+      orderNumber: 14,
+      subTaskGid: "",
+    },
+    {
+      tagName: "__BUYER__",
+      tagGid: "",
+      name: "Assure countersigns buy-side Fund Docs via Hellosign",
+      orderNumber: 15,
+      subTaskGid: "",
+    },
+    {
+      tagName: "__OPS__",
+      tagGid: "",
+      name: "Close on New Platform",
+      orderNumber: 16,
+      subTaskGid: "",
+    },
+    {
+      tagName: "__OPS__",
+      tagGid: "",
+      name: "Create closing on Admin",
+      orderNumber: 17,
+      subTaskGid: "",
+    },
+    {
+      tagName: "__OPS__",
+      tagGid: "",
+      name: "Map wires",
+      orderNumber: 18,
+      subTaskGid: "",
+    },
+    {
+      tagName: "__OPS__",
+      tagGid: "",
+      name: "Fulfill match",
+      orderNumber: 19,
+      subTaskGid: "",
+    },
+  ];
+
+  subTaskArray.forEach(function (subTask, i) {
+    subTask.tagGid = tagsObj[subTask.tagName];
+    actions.push({
+      data: {
+        name: subTask.name,
+        workspace: `${workspaceGID}`,
+      },
+      method: "post",
+      relative_path: `/tasks/${taskGID}/subtasks`,
+    });
+    actionCount++;
+    if (actionCount === 10 || i === subTaskArray.length - 1) {
+      requestsArray.push(actions);
+      //   console.log("current i", i);
+      //   console.log("batch request array length", requestsArray.length);
+      actionCount = 0;
+      actions = [];
+    }
+  });
+
+  requestsArray.forEach(function (request) {
+    responseArray.push(
+      client.batchAPI.createBatchRequest({
+        actions: [...request],
+      })
+    );
+  });
+
+  // awaits batch requests to finish, then flattens out the responses into a single array
+  const responses = (await Promise.all(responseArray)).flat();
+
+  responses.forEach(function ({ body }) {
+    const { name, gid } = body.data;
+    subTaskArray.forEach(function (subTask) {
+      if (subTask.name === name) {
+        subTask.subTaskGid = gid;
+      }
+    });
+  });
+  console.log(taskGID);
+  console.log(subTaskArray);
+
+  // responseArray.push(response);
+  // console.log(responseArray.length, "normal");
+  // responseArray = responseArray.flat();
+  //   console.log(responseArray.flat().length, "flattenbed");
+
+  //   //!!PROGRESS!! LOOK AT THIS FORMAT!!!
+  //   client.batchAPI.createBatchRequest({
+  //     actions: [
+  //       {
+  //         data: {
+  //           name: subTaskNameArray[0].name,
+  //           workspace: `${workspaceGID}`,
+  //         },
+  //         method: "post",
+  //         relative_path: `/tasks/${taskGID}/subtasks`,
+  //       },
+  //     ],
+  //   });
+  //     .then((result) => {
+  //       console.log(result);
+  //     })
+  //     .catch((err) => {
+  //       console.log("Error Here!!!!!", "\n", err.value);
+  // });
 }
 
 async function getSectionList(projectGID) {
@@ -385,3 +582,37 @@ module.exports = {
 //     workspace: "1111138376302363",
 //   },
 // };
+
+// {
+//     "data": {
+//       "actions": [
+//         {
+//           "data": {
+//             "assignee": "me",
+//             "workspace": "1111138376302363"
+//           },
+//           "method": "get",
+//           "options": {
+//             "fields": [
+//               "name",
+//               "notes",
+//               "completed"
+//             ],
+//             "limit": 3
+//           },
+//           "relative_path": "/tasks/1202504629382865"
+//         }
+//       ]
+//     }
+//   }
+
+//   subTaskNameArray.forEach(async function (subTaskObj) {
+//     tagGid = tagsObj[subTaskObj.tagName];
+//     setTimeout(async function () {
+//maybe don't await here????
+//       await client.tasks.createSubtaskForTask(taskGID, {
+//         tags: [tagGid],
+//         name: subTaskObj.name,
+//       });
+//     }, 5000);
+//   });
