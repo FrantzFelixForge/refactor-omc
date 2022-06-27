@@ -98,7 +98,7 @@ async function promptUser() {
             tagsObj,
             dealInfo
           );
-          console.log("Deal added --->", results);
+          //console.log("Deal added --->", results);
           break;
         case "Get all deals.":
           console.log("Getting all deals...");
