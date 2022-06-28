@@ -20,7 +20,7 @@
   },
   "homepage": "https://github.com/FrantzFelixForge/refactor-omc#readme",
   "devDependencies": {
-    "nodemon": "^2.0.16"
+    "nodemon": "^2.0.18"
   },
   "dependencies": {
     "asana": "^0.18.14",
