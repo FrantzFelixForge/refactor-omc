@@ -251,7 +251,7 @@ async function addDeal(workspaceGID, projectGID, userGID, tagsObj, dealInfo) {
       body: JSON.stringify(newDeal),
     });
     const { data } = await response.json();
-    await addFundDealSubTasks(data.gid, workspaceGID, tagsObj);
+    await addSubTasks(data.gid, workspaceGID, tagsObj);
     // console.log(data);
 
     return data;
@@ -269,17 +269,17 @@ async function getDeal(projectGID) {
   return data;
 }
 
-async function addFundDealSubTasks(taskGID, workspaceGID, tagsObj) {
+async function addSubTasks(taskGID, workspaceGID, tagsObj) {
   let actions = [];
   let actionCount = 0;
-  const requestsArray = [];
+  let requestsArray = [];
   const responseArray = [];
   const subTaskArray = [
     {
       tagName: "__OPS__",
       tagGid: "",
       name: "Assign yourself to the trade",
-      insert_after: `${taskGID}`,
+      insert_after: null,
       subTaskGid: "",
     },
     {
@@ -410,6 +410,22 @@ async function addFundDealSubTasks(taskGID, workspaceGID, tagsObj) {
     },
   ];
 
+  // Easier method of creating subtasks in reverse order to get the desired order
+  //   const reverseSubTaskArray = subTaskArray.reverse();
+  //   try {
+  //     for (let i = 0; i < reverseSubTaskArray.length; i++) {
+  //       const subTask = reverseSubTaskArray[i];
+  //       subTask.tagGid = tagsObj[subTask.tagName];
+  //       await client.tasks.createSubtaskForTask(taskGID, {
+  //         name: subTask.name,
+  //         tags: [`${subTask.tagGid}`],
+  //       });
+  //     }
+  //   } catch (error) {
+  //     console.log(error.value.errors);
+  //   }
+
+  //More complicated but faster method creating subtasks in order. Requires making them with all with the /batch endpoint. Then using the setParent endpoint to insert substasks in the correct order.
   subTaskArray.forEach(function (subTask, i) {
     subTask.tagGid = tagsObj[subTask.tagName];
     actions.push({
@@ -424,8 +440,6 @@ async function addFundDealSubTasks(taskGID, workspaceGID, tagsObj) {
     actionCount++;
     if (actionCount === 10 || i === subTaskArray.length - 1) {
       requestsArray.push(actions);
-      //   console.log("current i", i);
-      //   console.log("batch request array length", requestsArray.length);
       actionCount = 0;
       actions = [];
     }
@@ -438,7 +452,6 @@ async function addFundDealSubTasks(taskGID, workspaceGID, tagsObj) {
       })
     );
   });
-
   // awaits batch requests to finish, then flattens out the responses into a single array
   const responses = (await Promise.all(responseArray)).flat();
 
@@ -457,14 +470,10 @@ async function addFundDealSubTasks(taskGID, workspaceGID, tagsObj) {
     try {
       if (i === 0) {
         await client.tasks.setParentForTask(subTaskArray[i].subTaskGid, {
-          opt_fields: ["name"],
-          opt_fields: ["gid"],
           parent: `${taskGID}`,
         });
       } else {
         await client.tasks.setParentForTask(subTaskArray[i].subTaskGid, {
-          opt_fields: ["name"],
-          opt_fields: ["gid"],
           insert_after: `${subTaskArray[i].insert_after}`,
           parent: `${taskGID}`,
         });
@@ -473,34 +482,7 @@ async function addFundDealSubTasks(taskGID, workspaceGID, tagsObj) {
       console.log(error.value.errors);
     }
   }
-  console.log(taskGID);
-  console.log(subTaskArray);
 }
-
-// responseArray.push(response);
-// console.log(responseArray.length, "normal");
-// responseArray = responseArray.flat();
-//   console.log(responseArray.flat().length, "flattenbed");
-
-//   //!!PROGRESS!! LOOK AT THIS FORMAT!!!
-//   client.batchAPI.createBatchRequest({
-//     actions: [
-//       {
-//         data: {
-//           name: subTaskNameArray[0].name,
-//           workspace: `${workspaceGID}`,
-//         },
-//         method: "post",
-//         relative_path: `/tasks/${taskGID}/subtasks`,
-//       },
-//     ],
-//   });
-//     .then((result) => {
-//       console.log(result);
-//     })
-//     .catch((err) => {
-//       console.log("Error Here!!!!!", "\n", err.value);
-// });
 
 async function getSectionList(projectGID) {
   const { data } = await client.sections.getSectionsForProject(projectGID, {
