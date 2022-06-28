@@ -268,6 +268,7 @@ async function getDeal(projectGID) {
   console.table(data);
   return data;
 }
+
 async function addFundDealSubTasks(taskGID, workspaceGID, tagsObj) {
   let actions = [];
   let actionCount = 0;
@@ -278,133 +279,133 @@ async function addFundDealSubTasks(taskGID, workspaceGID, tagsObj) {
       tagName: "__OPS__",
       tagGid: "",
       name: "Assign yourself to the trade",
-      orderNumber: 1,
+      insert_after: `${taskGID}`,
       subTaskGid: "",
     },
     {
       tagName: "__OPS__",
       tagGid: "",
       name: "Send CEA + buy-side fund document",
-      orderNumber: 2,
+      insert_after: ``,
       subTaskGid: "",
     },
     {
       tagName: "__OPS__",
       tagGid: "",
       name: "Send wire instructions once KYC is approved",
-      orderNumber: 3,
+      insert_after: ``,
       subTaskGid: "",
     },
     {
       tagName: "__BUYER__",
       tagGid: "",
       name: "Buy-side funds received",
-      orderNumber: 4,
+      insert_after: ``,
       subTaskGid: "",
     },
     {
       tagName: "__OPS__",
       tagGid: "",
       name: "Send CEA + wire instructions template to sell-side",
-      orderNumber: 5,
+      insert_after: ``,
       subTaskGid: "",
     },
     {
       tagName: "__OPS__",
       tagGid: "",
       name: "Send PA and to sell-side and Assure once KYC is approved",
-      orderNumber: 6,
+      insert_after: ``,
       subTaskGid: "",
     },
     {
       tagName: "__OPS__",
       tagGid: "",
       name: "Submit to Issuer",
-      orderNumber: 7,
+      insert_after: ``,
       subTaskGid: "",
     },
     {
       tagName: "__ISSUER__",
       tagGid: "",
       name: "ROFR waived",
-      orderNumber: 8,
+      insert_after: ``,
       subTaskGid: "",
     },
     {
       tagName: "__OPS__",
       tagGid: "",
       name: "Review STA, if new or updated send to Legal to approve",
-      orderNumber: 9,
+      insert_after: ``,
       subTaskGid: "",
     },
     {
       tagName: "__LEGAL__",
       tagGid: "",
       name: "STA approved by Forge Legal",
-      orderNumber: 10,
+      insert_after: ``,
       subTaskGid: "",
     },
     {
       tagName: "__SELLER__",
       tagGid: "",
       name: "STA signed by shareholder and Assure & returned to company",
-      orderNumber: 11,
+      insert_after: ``,
       subTaskGid: "",
     },
     {
       tagName: "__ISSUER__",
       tagGid: "",
       name: "STA countersigned by company",
-      orderNumber: 12,
+      insert_after: ``,
       subTaskGid: "",
     },
     {
       tagName: "__OPS__",
       tagGid: "",
       name: "Wire to Seller",
-      orderNumber: 13,
+      insert_after: ``,
       subTaskGid: "",
     },
     {
       tagName: "__SELLER__",
       tagGid: "",
       name: "Seller confirmed receipt",
-      orderNumber: 14,
+      insert_after: ``,
       subTaskGid: "",
     },
     {
       tagName: "__BUYER__",
       tagGid: "",
       name: "Assure countersigns buy-side Fund Docs via Hellosign",
-      orderNumber: 15,
+      insert_after: ``,
       subTaskGid: "",
     },
     {
       tagName: "__OPS__",
       tagGid: "",
       name: "Close on New Platform",
-      orderNumber: 16,
+      insert_after: ``,
       subTaskGid: "",
     },
     {
       tagName: "__OPS__",
       tagGid: "",
       name: "Create closing on Admin",
-      orderNumber: 17,
+      insert_after: ``,
       subTaskGid: "",
     },
     {
       tagName: "__OPS__",
       tagGid: "",
       name: "Map wires",
-      orderNumber: 18,
+      insert_after: ``,
       subTaskGid: "",
     },
     {
       tagName: "__OPS__",
       tagGid: "",
       name: "Fulfill match",
-      orderNumber: 19,
+      insert_after: ``,
       subTaskGid: "",
     },
   ];
@@ -415,9 +416,10 @@ async function addFundDealSubTasks(taskGID, workspaceGID, tagsObj) {
       data: {
         name: subTask.name,
         workspace: `${workspaceGID}`,
+        tags: [`${subTask.tagGid}`],
       },
       method: "post",
-      relative_path: `/tasks/${taskGID}/subtasks`,
+      relative_path: `/tasks`,
     });
     actionCount++;
     if (actionCount === 10 || i === subTaskArray.length - 1) {
@@ -442,40 +444,63 @@ async function addFundDealSubTasks(taskGID, workspaceGID, tagsObj) {
 
   responses.forEach(function ({ body }) {
     const { name, gid } = body.data;
-    subTaskArray.forEach(function (subTask) {
+    subTaskArray.forEach(function (subTask, i) {
       if (subTask.name === name) {
         subTask.subTaskGid = gid;
       }
+      if (subTask.name === name && i != 0) {
+        subTask.insert_after = subTaskArray[i - 1].subTaskGid;
+      }
     });
   });
+  for (let i = 0; i < subTaskArray.length; i++) {
+    try {
+      if (i === 0) {
+        await client.tasks.setParentForTask(subTaskArray[i].subTaskGid, {
+          opt_fields: ["name"],
+          opt_fields: ["gid"],
+          parent: `${taskGID}`,
+        });
+      } else {
+        await client.tasks.setParentForTask(subTaskArray[i].subTaskGid, {
+          opt_fields: ["name"],
+          opt_fields: ["gid"],
+          insert_after: `${subTaskArray[i].insert_after}`,
+          parent: `${taskGID}`,
+        });
+      }
+    } catch (error) {
+      console.log(error.value.errors);
+    }
+  }
   console.log(taskGID);
   console.log(subTaskArray);
-
-  // responseArray.push(response);
-  // console.log(responseArray.length, "normal");
-  // responseArray = responseArray.flat();
-  //   console.log(responseArray.flat().length, "flattenbed");
-
-  //   //!!PROGRESS!! LOOK AT THIS FORMAT!!!
-  //   client.batchAPI.createBatchRequest({
-  //     actions: [
-  //       {
-  //         data: {
-  //           name: subTaskNameArray[0].name,
-  //           workspace: `${workspaceGID}`,
-  //         },
-  //         method: "post",
-  //         relative_path: `/tasks/${taskGID}/subtasks`,
-  //       },
-  //     ],
-  //   });
-  //     .then((result) => {
-  //       console.log(result);
-  //     })
-  //     .catch((err) => {
-  //       console.log("Error Here!!!!!", "\n", err.value);
-  // });
 }
+
+// responseArray.push(response);
+// console.log(responseArray.length, "normal");
+// responseArray = responseArray.flat();
+//   console.log(responseArray.flat().length, "flattenbed");
+
+//   //!!PROGRESS!! LOOK AT THIS FORMAT!!!
+//   client.batchAPI.createBatchRequest({
+//     actions: [
+//       {
+//         data: {
+//           name: subTaskNameArray[0].name,
+//           workspace: `${workspaceGID}`,
+//         },
+//         method: "post",
+//         relative_path: `/tasks/${taskGID}/subtasks`,
+//       },
+//     ],
+//   });
+//     .then((result) => {
+//       console.log(result);
+//     })
+//     .catch((err) => {
+//       console.log("Error Here!!!!!", "\n", err.value);
+// });
 
 async function getSectionList(projectGID) {
   const { data } = await client.sections.getSectionsForProject(projectGID, {
