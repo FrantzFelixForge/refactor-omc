@@ -10,7 +10,7 @@ router.post("/receiveWebhook", function (req, res) {
     console.log("This is a new webhook");
     secret = req.headers["x-hook-secret"];
 
-    console.log(secret);
+    //console.log(secret);
     res.setHeader("X-Hook-Secret", secret);
     res.sendStatus(200);
   } else if (req.headers["x-hook-signature"]) {
@@ -30,6 +30,7 @@ router.post("/receiveWebhook", function (req, res) {
     } else {
       console.log(`Events on ${Date()}:`);
       console.log(req.body.events);
+      //fech task
       res.sendStatus(200);
     }
   } else {
@@ -47,11 +48,24 @@ module.exports = router;
 			{
 				"action": "changed",
 				"resource_type": "task",
-				"fields": ["due_on", "name", "notes", "liked"]
+				 "fields": [
+          "completed",
+						"custom_fields",
+						"name"
+
+        ]
+			},	
+						{
+				"action": "added",
+				"resource_type": "task"	
+			},	
+			{
+				"action": "added",
+				"resource_type": "story"
 			}
-		],
-		"resource": "1202520364426183",
-		"target": "/api/receiveWebhook"
+	],
+		"resource": "1202453205610966",
+		"target": "https://e372-71-212-117-190.ngrok.io/api/webhooks/receiveWebhook"
 	}
 }
 */
