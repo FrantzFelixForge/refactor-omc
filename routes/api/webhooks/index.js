@@ -60,11 +60,16 @@ router.post("/receiveWebhook", async function (req, res) {
           //console.log("Looping events...");
           const { action, user, change, resource, parent } = events[i];
           const userinfo = await asanaUser.getUser(user.gid);
-          const username = userinfo.name;
+          const username = `\x1b[35m${userinfo.name}\x1b[0m`;
 
           const touchedResource =
             resource.resource_type === "task"
               ? await asanaTask.getTask(resource.gid)
+              : null;
+          //console.log(events[i]);
+          const touchedStory =
+            resource.resource_type === "story"
+              ? await asanaStory.getStory(resource.gid)
               : null;
           const isCompleteString = touchedResource?.completed
             ? "\x1b[32mcomplete\x1b[0m"
@@ -90,7 +95,7 @@ router.post("/receiveWebhook", async function (req, res) {
                   console.log("\x1b[33m Trade step touched \x1b[0m");
 
                   console.log(
-                    `\x1b[35m${username}\x1b[0m \x1b[1;34m${action}\x1b[0m the \x1b[36m${tagToString(
+                    `${username} \x1b[1;34m${action}\x1b[0m the \x1b[36m${tagToString(
                       touchedResource?.tags[0]?.name
                     )}\x1b[0m trade step \n \x1b[4m${
                       touchedResource?.name
@@ -106,7 +111,7 @@ router.post("/receiveWebhook", async function (req, res) {
                 ) {
                   console.log("\x1b[33m Deal touched \x1b[0m");
                   console.log(
-                    `\x1b[35m${username}\x1b[0m \x1b[1;34m${action}\x1b[0m the \x1b[36m${tagToString(
+                    `${username} \x1b[1;34m${action}\x1b[0m the \x1b[36m${tagToString(
                       touchedResource?.tags[0]?.name
                     )}\x1b[0m \n\x1b[4m${
                       touchedResource?.name
@@ -121,7 +126,7 @@ router.post("/receiveWebhook", async function (req, res) {
                   console.log("\x1b[33m Trade step name touched \x1b[0m");
 
                   console.log(
-                    `\x1b[35m${username}\x1b[0m \x1b[1;34m${action}\x1b[0m a ${tagToString(
+                    `${username} \x1b[1;34m${action}\x1b[0m a ${tagToString(
                       touchedResource?.tags[0]?.name
                     )} trade step name to \n \x1b[4m${
                       touchedResource?.name
@@ -137,7 +142,7 @@ router.post("/receiveWebhook", async function (req, res) {
                 ) {
                   console.log("\x1b[33m Deal name touched \x1b[0m");
                   console.log(
-                    `\x1b[35m${username}\x1b[0m \x1b[1;34m${action}\x1b[0m a \x1b[36m${tagToString(
+                    `${username} \x1b[1;34m${action}\x1b[0m a \x1b[36m${tagToString(
                       touchedResource?.tags[0]?.name
                     )}\x1b[0m name to \n\x1b[4m${
                       touchedResource?.name
@@ -154,7 +159,7 @@ router.post("/receiveWebhook", async function (req, res) {
                   console.log("\x1b[33m Tag added to trade step \x1b[0m");
 
                   console.log(
-                    `\x1b[35m${username}\x1b[0m \x1b[1;34m${action}\x1b[0m a \x1b[36m${tagToString(
+                    `${username} \x1b[1;34m${action}\x1b[0m a \x1b[36m${tagToString(
                       touchedResource?.tags[0]?.name
                     )}\x1b[0m tag to the trade step \n\x1b[4m${
                       touchedResource?.name
@@ -165,7 +170,7 @@ router.post("/receiveWebhook", async function (req, res) {
                 if (parent?.resource_type === "task") {
                   console.log("\x1b[33m Trade step added. \x1b[0m");
                   console.log(
-                    `\x1b[35m${username}\x1b[0m \x1b[1;34m${action}\x1b[0m a \x1b[36m${tagToString(
+                    `${username} \x1b[1;34m${action}\x1b[0m a \x1b[36m${tagToString(
                       touchedResource?.tags[0]?.name
                     )}\x1b[0m trade step named \n\x1b[4m${
                       touchedResource?.name
@@ -174,19 +179,26 @@ router.post("/receiveWebhook", async function (req, res) {
                 }
                 break;
               default:
-                console.log("Event not handled yet!");
+                console.log(" Task event not handled yet!");
                 break;
             }
           } else if (resource.resource_type === "story") {
             switch (action) {
               case "added":
                 if (resource.resource_subtype === "section_changed") {
+                  console.log("\x1b[33m Deal moved sections. \x1b[0m");
+                  const sectionMoved = touchedStory.text.split("Task");
+
+                  console.log(
+                    `${username} moved deal \x1b[4m${touchedStory.target.name}\x1b[0m \n \x1b[32${sectionMoved[1]}}\x1b[0m \n \n`
+                  );
                 }
                 break;
               default:
+                console.log("Story event not handled yet!");
+                // console.log(events[i]);
                 break;
             }
-            console.log(events[i]);
           }
         }
 
