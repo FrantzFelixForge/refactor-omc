@@ -1,19 +1,20 @@
 const asana = require(`asana`);
 require(`dotenv`).config();
 
-class Task {
+class User {
   constructor() {
     this.client = asana.Client.create().useAccessToken(
       process.env.PERSONAL_ACCESS_TOKEN
     );
   }
 
-  async getTask(taskGID) {
-    const result = await this.client.tasks.getTask(taskGID, {
-      opt_fields: "tags.name, name, parent, completed",
+  /* /users/{user_gid} */
+  async getUser(userGID) {
+    const result = await this.client.users.getUser(userGID, {
+      opt_fields: "name",
     });
     return result;
   }
 }
 
-module.exports = Task;
+module.exports = User;

@@ -8,6 +8,10 @@ class Tag {
     );
   }
 
-  getTag(tagGID) {}
+  async getTag(tagGID) {
+    const result = await client.tags.getTag(tagGID, { opt_fields: "name" });
+
+    return result;
+  }
 }
 module.exports = Tag;
