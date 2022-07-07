@@ -2,7 +2,7 @@ const router = require(`express`).Router();
 const crypto = require("crypto");
 const asana = require(`asana`);
 require(`dotenv`).config();
-const { Task, User, Story } = require("../../../controllers");
+const { Task, User, Story, Section } = require("../../../controllers");
 
 let secret = "";
 
@@ -54,7 +54,7 @@ router.post("/receiveWebhook", async function (req, res) {
         const { events } = req.body;
         const asanaUser = new User();
         const asanaTask = new Task();
-        const asanaStory = new Story();
+        const asanaSection = new Section();
         //console.log(events);
         for (let i = 0; i < events.length; i++) {
           //console.log("Looping events...");
@@ -62,21 +62,22 @@ router.post("/receiveWebhook", async function (req, res) {
           const userinfo = await asanaUser.getUser(user.gid);
           const username = `\x1b[35m${userinfo.name}\x1b[0m`;
 
-          const touchedResource =
+          const touchedTask =
             resource.resource_type === "task"
               ? await asanaTask.getTask(resource.gid)
               : null;
           //console.log(events[i]);
-          const touchedStory =
-            resource.resource_type === "story"
-              ? await asanaStory.getStory(resource.gid)
-              : null;
-          const isCompleteString = touchedResource?.completed
+          //   const touchedStory =
+          //     resource.resource_type === "story"
+          //       ? await asanaStory.getStory(resource.gid)
+          //       : null;
+          const isCompleteString = touchedTask?.completed
             ? "\x1b[32mcomplete\x1b[0m"
             : "\x1b[31mincomplete\x1b[0m";
-          const parentResource = touchedResource?.parent
-            ? await asanaTask.getTask(touchedResource.parent.gid)
-            : null;
+          const parentTask =
+            touchedTask?.parent?.resource_type === "task"
+              ? await asanaTask.getTask(touchedTask.parent.gid)
+              : null;
 
           //   console.log(
           //     "********************************",
@@ -89,80 +90,77 @@ router.post("/receiveWebhook", async function (req, res) {
               case "changed":
                 // if event resource is a sub task and completed field changed
                 if (
-                  parentResource?.tags[0]?.name === "__DEAL__" &&
+                  parentTask?.tags[0]?.name === "__DEAL__" &&
                   change.field === "completed"
                 ) {
                   console.log("\x1b[33m Trade step touched \x1b[0m");
 
                   console.log(
                     `${username} \x1b[1;34m${action}\x1b[0m the \x1b[36m${tagToString(
-                      touchedResource?.tags[0]?.name
+                      touchedTask?.tags[0]?.name
                     )}\x1b[0m trade step \n \x1b[4m${
-                      touchedResource?.name
+                      touchedTask?.name
                     }\x1b[0m to ${isCompleteString} \n on the deal \x1b[4m${
-                      parentResource?.name
+                      parentTask?.name
                     } \x1b[0m \n \n`
                   );
                 }
                 // if event resource is a task and completed field changed
                 if (
-                  touchedResource?.tags[0]?.name === "__DEAL__" &&
+                  touchedTask?.tags[0]?.name === "__DEAL__" &&
                   change.field === "completed"
                 ) {
                   console.log("\x1b[33m Deal touched \x1b[0m");
                   console.log(
                     `${username} \x1b[1;34m${action}\x1b[0m the \x1b[36m${tagToString(
-                      touchedResource?.tags[0]?.name
+                      touchedTask?.tags[0]?.name
                     )}\x1b[0m \n\x1b[4m${
-                      touchedResource?.name
+                      touchedTask?.name
                     }\x1b[0m to ${isCompleteString}. \n \n`
                   );
                 }
                 // if event resource is a sub task and name field changed
                 if (
-                  parentResource?.tags[0].name === "__DEAL__" &&
+                  parentTask?.tags[0]?.name === "__DEAL__" &&
                   change.field === "name"
                 ) {
                   console.log("\x1b[33m Trade step name touched \x1b[0m");
 
                   console.log(
                     `${username} \x1b[1;34m${action}\x1b[0m a ${tagToString(
-                      touchedResource?.tags[0]?.name
+                      touchedTask?.tags[0]?.name
                     )} trade step name to \n \x1b[4m${
-                      touchedResource?.name
+                      touchedTask?.name
                     }\x1b[0m \n on the deal \x1b[4m${
-                      parentResource?.name
+                      parentTask?.name
                     } \x1b[0m \n \n`
                   );
                 }
                 // if event resource is a task and name field changed
                 if (
-                  touchedResource?.tags[0]?.name === "__DEAL__" &&
+                  touchedTask?.tags[0]?.name === "__DEAL__" &&
                   change.field === "name"
                 ) {
                   console.log("\x1b[33m Deal name touched \x1b[0m");
                   console.log(
                     `${username} \x1b[1;34m${action}\x1b[0m a \x1b[36m${tagToString(
-                      touchedResource?.tags[0]?.name
+                      touchedTask?.tags[0]?.name
                     )}\x1b[0m name to \n\x1b[4m${
-                      touchedResource?.name
+                      touchedTask?.name
                     }\x1b[0m. \n \n`
                   );
                 }
                 break;
               case "added":
-                // if a tag is added and  it is a sub task
-                if (
-                  parent?.resource_type === "tag" &&
-                  parentResource !== null
-                ) {
+                // if a tag is added and it is a sub task
+                if (parent?.resource_type === "tag" && parentTask !== null) {
                   console.log("\x1b[33m Tag added to trade step \x1b[0m");
 
                   console.log(
                     `${username} \x1b[1;34m${action}\x1b[0m a \x1b[36m${tagToString(
-                      touchedResource?.tags[0]?.name
+                      touchedTask?.tags[0]?.name
                     )}\x1b[0m tag to the trade step \n\x1b[4m${
-                      touchedResource?.name
+                      touchedTask?.name
                     }\x1b[0m. \n \n`
                   );
                 }
@@ -171,47 +169,61 @@ router.post("/receiveWebhook", async function (req, res) {
                   console.log("\x1b[33m Trade step added. \x1b[0m");
                   console.log(
                     `${username} \x1b[1;34m${action}\x1b[0m a \x1b[36m${tagToString(
-                      touchedResource?.tags[0]?.name
+                      touchedTask?.tags[0]?.name
                     )}\x1b[0m trade step named \n\x1b[4m${
-                      touchedResource?.name
+                      touchedTask?.name
                     }\x1b[0m. \n \n`
                   );
                 }
-                break;
-              default:
-                console.log(" Task event not handled yet!");
-                break;
-            }
-          } else if (resource.resource_type === "story") {
-            switch (action) {
-              case "added":
-                if (resource.resource_subtype === "section_changed") {
-                  console.log("\x1b[33m Deal moved sections. \x1b[0m");
-                  const sectionMoved = touchedStory.text.split("Task");
-
+                // if deal is moved sections
+                if (parent?.resource_type === "section") {
+                  const { name } = await asanaSection.getSection(parent.gid);
+                  console.log("\x1b[33m Deal moved in the pipeline \x1b[0m");
                   console.log(
-                    `${username} moved deal \x1b[4m${touchedStory.target.name}\x1b[0m \n \x1b[32${sectionMoved[1]}}\x1b[0m \n \n`
+                    `${username} \x1b[1;34mmoved\x1b[0m the \x1b[36m${tagToString(
+                      touchedTask?.tags[0]?.name
+                    )}\x1b[0m \n\x1b[4m${
+                      touchedTask?.name
+                    }\x1b[0m to the \n\x1b[4m${name}\x1b[0m section. \n \n`
                   );
                 }
                 break;
               default:
-                console.log("Story event not handled yet!");
-                // console.log(events[i]);
+                console.log("Event not handled yet!");
                 break;
             }
           }
+          //   else if (resource.resource_type === "story") {
+          //     switch (action) {
+          //       case "added":
+          //         if (resource.resource_subtype === "section_changed") {
+          //           console.log("\x1b[33m Deal moved sections. \x1b[0m");
+          //           const sectionMoved = touchedStory.text.split("Task");
+          //           console.log(sectionMoved);
+
+          //           console.log(
+          //             `${username} moved deal \x1b[4m${touchedStory.target.name}\x1b[0m \n \x1b[32${sectionMoved[1]}}\x1b[0m \n \n`
+          //           );
+          //         }
+          //         break;
+          //       default:
+          //         console.log("Story event not handled yet!");
+          //         // console.log(events[i]);
+          //         break;
+          //     }
+          //   }
         }
 
         //fech task
         res.sendStatus(200);
       } catch (error) {
-        console.error("Server Error", error);
+        console.error("Error:", "\n", error);
         console.error("Asana Error:", error?.value?.errors);
         res.sendStatus(500);
       }
     }
   } else {
-    console.error("Something went wrong!");
+    console.error("Something went wrong with x-hook-signture/secret!");
   }
 });
 
