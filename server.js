@@ -6,6 +6,7 @@ const path = require(`path`);
 const routes = require(`./routes`);
 require("dotenv").config();
 const inquirer = require("inquirer");
+const fetch = require(`node-fetch`);
 const {
   findWorkspace,
   findUser,
@@ -17,7 +18,9 @@ const {
   getDealsInSection,
   generateTags,
 } = require("./utils/asanaUtil");
+const { Webhook } = require("./controllers");
 const { exit } = require("process");
+const asana = require("asana");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -38,7 +41,12 @@ async function mainMenu() {
       type: "list",
       name: "menu",
       message: "What do you want to do next?",
-      choices: ["Get all deals.", "Add a deal.", "Get all deals in a section."],
+      choices: [
+        "Get all deals.",
+        "Add a deal.",
+        "Get all deals in a section.",
+        "Listen for changes in Asana.",
+      ],
     },
   ]);
   return answers.menu;
@@ -106,8 +114,13 @@ async function promptUser() {
           break;
         case "Get all deals in a section.":
           const { sectionGID, sectionName } = await getSectionList(projectGID);
+          console.log(sectionGID, sectionName);
           console.log(`Getting all tasks in ${sectionName}...`);
           console.table(await getDealsInSection(sectionGID));
+          break;
+        case "Listen for changes in Asana.":
+          const asanaWebhook = new Webhook();
+          asanaWebhook.createWebhook(projectGID);
           break;
         default:
           console.log("Unknown interaction: " + nextInteraction);
@@ -122,6 +135,13 @@ async function promptUser() {
       ]);
       answers.continue === "yes" ? (runAgain = true) : (runAgain = false);
       if (!runAgain) {
+        const asanaWebhook = new Webhook();
+        const { data } = await asanaWebhook.getWebhooks();
+        for (let i = 0; i < data.length; i++) {
+          const { gid } = data[i];
+          const deletedWebhookMsg = await asanaWebhook.deleteWebhook(gid);
+          console.log(deletedWebhookMsg);
+        }
         exit();
       }
     }
