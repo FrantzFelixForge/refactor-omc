@@ -223,13 +223,12 @@ async function addDeal(workspaceGID, projectGID, userGID, tagsObj, dealInfo) {
       assignee: `${userGID}`,
       assignee_status: "upcoming",
       completed: false,
-      // due_on: `${req.body.taskCompletionDate}`,
-      //liked: true,
+
       name: `${dealInfo.issuer} | ${dealInfo.seller}/${dealInfo.buyer} | $${dealInfo.price}`,
       notes: `Term Sheet notes here`,
       projects: [`${projectGID}`],
       resource_subtype: "default_task",
-      //start_on: todaysDate,
+      memberships: [{ section: "1202453205610967", project: `${projectGID}` }],
       parent: null,
       workspace: `${workspaceGID}`,
       tags: [tagsObj["__DEAL__"]],
@@ -251,6 +250,7 @@ async function addDeal(workspaceGID, projectGID, userGID, tagsObj, dealInfo) {
       body: JSON.stringify(newDeal),
     });
     const { data } = await response.json();
+
     await addSubTasks(data.gid, workspaceGID, tagsObj);
     // console.log(data);
 
