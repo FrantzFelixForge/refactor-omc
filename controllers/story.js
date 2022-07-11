@@ -3,9 +3,9 @@ require(`dotenv`).config();
 
 class Story {
   constructor() {
-    this.client = asana.Client.create().useAccessToken(
-      process.env.PERSONAL_ACCESS_TOKEN
-    );
+    this.client = asana.Client.create({
+      logAsanaChangeWarnings: false,
+    }).useAccessToken(process.env.PERSONAL_ACCESS_TOKEN);
   }
 
   /* GET /stories/{story_gid} */
