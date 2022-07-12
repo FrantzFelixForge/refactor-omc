@@ -8,7 +8,7 @@ class Webhook {
       logAsanaChangeWarnings: false,
     }).useAccessToken(process.env.PERSONAL_ACCESS_TOKEN);
   }
-  //{ defaultHeaders: { "asana-disabled": "new_project_template" },}
+
   async getWebhooks() {
     const result = await this.client.webhooks.getWebhooks({
       resource: "1202453205610966",
@@ -18,9 +18,8 @@ class Webhook {
     return result;
   }
 
-  async createWebhook(resourceGID) {
+  async createWebhook(resourceGID = process.env.PROJECT_GID) {
     const body = {
-      //   data: {
       filters: [
         {
           action: "changed",
@@ -34,18 +33,9 @@ class Webhook {
       ],
       resource: `${resourceGID}`,
       target: `${process.env.NGROK_URL}/api/webhooks/receiveWebhook`,
-      //   },
     };
 
     // const response = await fetch("https://app.asana.com/api/1.0/webhooks", {
-    //   method: "POST",
-    //   headers: {
-    //     "Content-Type": "application/json",
-    //     Authorization: `Bearer ${process.env.PERSONAL_ACCESS_TOKEN}`,
-    //   },
-    //   body: JSON.stringify(body),
-    // });
-    // const json = await response.json();
 
     const response = await this.client.webhooks.createWebhook(body);
 
