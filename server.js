@@ -7,18 +7,7 @@ const routes = require(`./routes`);
 require("dotenv").config();
 const inquirer = require("inquirer");
 const fetch = require(`node-fetch`);
-const {
-  findWorkspace,
-  findUser,
-  findTeam,
-  findProject,
-  addDeal,
-  getDeal,
-  getSectionList,
-  getDealsInSection,
-  generateTags,
-  choices,
-} = require("./utils/asanaUtil");
+const { choices } = require("./utils/asanaUtil");
 const {
   Webhook,
   Task,
