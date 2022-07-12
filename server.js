@@ -17,8 +17,18 @@ const {
   getSectionList,
   getDealsInSection,
   generateTags,
+  choices,
 } = require("./utils/asanaUtil");
-const { Webhook, Task } = require("./controllers");
+const {
+  Webhook,
+  Task,
+  Tag,
+  Workspace,
+  Project,
+  User,
+  Team,
+  Section,
+} = require("./controllers");
 const { exit } = require("process");
 const asana = require("asana");
 
@@ -55,43 +65,68 @@ async function promptUser() {
   let runAgain = true;
 
   try {
-    // const workspaceGID = await findWorkspace();
-    // const userGID = await findUser();
-    // const teamGID = await findTeam(workspaceGID, userGID);
-    // const projectGID = await findProject(teamGID);
-    // const tagsObj = await generateTags(workspaceGID);
-    const tagsObj = await generateTags(process.env.WORKSPACE_GID);
+    console.log(
+      "Fetching information about workspace, team, project, tags and current user..."
+    );
+    const asanaWorkspace = new Workspace();
+    const workspace = await asanaWorkspace.getForgeWorkspace();
+    const workspaceGID = workspace.gid || process.env.WORKSPACE_GID;
+
+    const asanaUser = new User();
+    const user = await asanaUser.getMe();
+    const userGID = user.gid || process.env.ME_GID;
+
+    const asanaProject = new Project();
+    const project = await asanaProject.getSandboxProject();
+    const projectGID = project.gid || process.env.PROJECT_GID;
+
+    const asanaTeam = new Team();
+    const team = await asanaTeam.getEngTeam();
+    const teamGID = team.gid || process.env.ENG_TEAM_GID;
+
+    const asanaTag = new Tag();
+    const tagsObj = await asanaTag.generateTags(process.env.WORKSPACE_GID);
     while (runAgain) {
       const nextInteraction = await mainMenu();
 
       switch (nextInteraction) {
         case "Add a deal.":
           console.log("Adding a deal...");
-          // const results = await addDeal(
-          //   workspaceGID,
-          //   projectGID,
-          //   userGID,
-          //   tagsObj,
-          //   dealInfo
-          // );
           const asanaTask = new Task();
           await asanaTask.createTask(tagsObj);
           console.log("Deal added --->");
           break;
         case "Get all deals.":
           console.log("Getting all deals...");
-          await getDeal(process.env.PROJECT_GID);
+          const gettingAsanaTasks = new Task();
+          const result = await gettingAsanaTasks.getTaskByProject(projectGID);
+          console.table(result, ["name", "completed", "assignee"]);
+
           break;
         case "Get all deals in a section.":
-          const { sectionGID, sectionName } = await getSectionList(
-            process.env.PROJECT_GID
-          );
+          const asanaSection = new Section();
+          const sections = await asanaSection.getSectionsByProject(projectGID);
+          const { choiceArray, choiceObj } = choices(sections);
+          let answers = await inquirer.prompt([
+            {
+              type: "list",
+              name: "section",
+              message: "What section did you want to select?",
+              choices: choiceArray,
+            },
+          ]);
+          const sectionName = answers.section;
+          const sectionGID = choiceObj[answers.section];
           console.log(`Getting all tasks in ${sectionName}...`);
-          console.table(await getDealsInSection(sectionGID));
+          console.table(await asanaSection.getTasksInSection(sectionGID), [
+            "name",
+            "completed",
+            "assignee",
+          ]);
           break;
         case "Listen for changes in Asana.":
           const asanaWebhook = new Webhook();
-          asanaWebhook.createWebhook(process.env.PROJECT_GID);
+          asanaWebhook.createWebhook(projectGID);
           break;
         default:
           console.log("Unknown interaction: " + nextInteraction);
