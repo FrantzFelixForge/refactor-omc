@@ -10,10 +10,16 @@ class Task {
   }
 
   async getTask(taskGID) {
-    const result = await this.client.tasks.getTask(taskGID, {
+    const { data } = await this.client.tasks.getTask(taskGID, {
       opt_fields: "tags.name, name, parent, completed",
     });
-    return result;
+    return data;
+  }
+  async getTaskByProject(projectGID = process.env.PROJECT_GID) {
+    const { data } = await this.client.tasks.getTasksForProject(projectGID, {
+      opt_fields: "tags.name, name, completed, assignee.name",
+    });
+    return data;
   }
 
   async createTask(tagsObj) {
@@ -140,7 +146,7 @@ class Task {
         } else if (i === 0) {
           buyerTitle = buyer;
         } else {
-          buyerTitle = `${buyerTitle} +` + buyer;
+          buyerTitle = `${buyerTitle} + ` + buyer;
         }
       }
       let sellerTitle = "";
@@ -227,7 +233,7 @@ class Task {
         tagsObj,
         dealInfo.type
       );
-      return dealAdded;
+      return { dealAdded, tradeStepsAdded };
     } catch (error) {
       console.log(error);
       console.log(error?.value?.errors);
@@ -932,14 +938,20 @@ class Task {
     // Easier method of creating subtasks in reverse order to get the desired order
     const reverseSubTaskArray = subTaskArray.reverse();
     try {
+      const addedSubTasks = [];
       for (let i = 0; i < reverseSubTaskArray.length; i++) {
         const subTask = reverseSubTaskArray[i];
         subTask.tagGid = tagsObj[subTask.tagName];
-        await this.client.tasks.createSubtaskForTask(taskGID, {
-          name: subTask.name,
-          tags: [`${subTask.tagGid}`],
-        });
+        let currentSubTask = await this.client.tasks.createSubtaskForTask(
+          taskGID,
+          {
+            name: subTask.name,
+            tags: [`${subTask.tagGid}`],
+          }
+        );
+        addedSubTasks.push(currentSubTask);
       }
+      return addedSubTasks;
     } catch (error) {
       console.log(error?.value?.errors);
     }
