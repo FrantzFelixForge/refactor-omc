@@ -163,6 +163,8 @@ class Task {
         }
       }
       const usersOnTeam = await new User().getUsersByTeam();
+
+      //TODO- Get ops user from fetch deal not random
       // let operationsUserGID = "";
       // console.log(usersOnTeam.data);
       // for (let i = 0; i < usersOnTeam.data.length; i++) {
