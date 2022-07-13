@@ -71,7 +71,7 @@ router.get("/settings", async function (req, res) {
   );
 
   client.customFieldSettings
-    .getCustomFieldSettingsForProject(1202402175058587)
+    .getCustomFieldSettingsForProject(1202453205610966)
     .then((result) => {
       res.json(result);
     });
