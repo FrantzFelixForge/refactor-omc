@@ -1,109 +1,213 @@
-const fetch = require(`node-fetch`);
-const asana = require(`asana`);
+// const fetch = require(`node-fetch`);
+// const asana = require(`asana`);
 const inquirer = require("inquirer");
-// TODO:
-// Create an Asana client. Do this per request since it keeps state that
-// shouldn't be shared across requests.
-const client = asana.Client.create().useAccessToken(
-  process.env.PERSONAL_ACCESS_TOKEN
-);
+const { UserPrompts } = require("./inquirer");
+const {
+  Webhook,
+  Task,
+  Tag,
+  Workspace,
+  Project,
+  User,
+  Team,
+  Section,
+} = require("../controllers");
+const { exit } = require("process");
 
-function choices(data) {
-  const choiceObj = {};
-  const choiceArray = [];
-  data.map(function (item) {
-    choiceObj[item.name] = item.gid;
-    choiceArray.push(item.name);
-  });
-  return { choiceArray, choiceObj };
+const promptUser = new UserPrompts();
+async function initAsanaEnv() {
+  console.log(
+    "Fetching information about workspace, team, project, tags and current user..."
+  );
+  try {
+    const asanaWorkspace = new Workspace();
+    const workspace = await asanaWorkspace.getForgeWorkspace();
+    const workspaceGID = workspace.gid || process.env.WORKSPACE_GID;
+
+    const asanaUser = new User();
+    const user = await asanaUser.getMe();
+    const userGID = user.gid || process.env.ME_GID;
+
+    const asanaProject = new Project();
+    const project = await asanaProject.getSandboxProject();
+    const projectGID = project.gid || process.env.PROJECT_GID;
+
+    const asanaTeam = new Team();
+    const team = await asanaTeam.getEngTeam();
+    const teamGID = team.gid || process.env.ENG_TEAM_GID;
+
+    const asanaTag = new Tag();
+    const tagsObj = await asanaTag.generateTags(workspaceGID);
+
+    const promiseResults = await Promise.all([
+      { workspaceGID },
+      { userGID },
+      { projectGID },
+      { teamGID },
+      { tagsObj },
+    ]);
+
+    const results = {};
+
+    for (let i = 0; i < promiseResults.length; i++) {
+      const resolvedObj = promiseResults[i];
+      const [entry] = Object.entries(resolvedObj);
+      const [key, value] = entry;
+      results[key] = value;
+    }
+
+    return results;
+  } catch (error) {
+    console.log(error);
+    console.log(error?.error?.values);
+    throw "Asana init Failed";
+  }
+}
+async function getAndDeleteWebhooks() {
+  const asanaWebhook = new Webhook();
+  const { data } = await asanaWebhook.getWebhooks();
+  for (let i = 0; i < data.length; i++) {
+    const { gid } = data[i];
+    const deletedWebhookMsg = await asanaWebhook.deleteWebhook(gid);
+    console.log(deletedWebhookMsg);
+  }
 }
 
-module.exports = {
-  choices,
-};
+async function prompts(workspaceGID, userGID, projectGID, teamGID, tagsObj) {
+  try {
+    let runAgain = true;
+    while (runAgain) {
+      const nextInteraction = await promptUser.mainMenu();
 
-// function makeChoices(dataArray){
-//     const choiceObj = {};
-//     const choiceArray = [];
-//     data.map(function (dataArray) {
-//       choiceObj[dataArray.name] = dataArray.gid;
-//       choiceArray.push(dataArray.name);
-//     });
-//     return choiceArray;
+      switch (nextInteraction) {
+        case "Add a deal.":
+          console.log("Adding a deal...");
+          const asanaTask = new Task();
+          const dealAdded = await asanaTask.createTask(tagsObj);
+          console.table(dealAdded, ["name"]);
+          console.log("Deal added...");
 
-// }
+          break;
+        case "Get all deals.":
+          let anotherOperation = true;
+          while (anotherOperation) {
+            const { selectedDeal, dealGID, dealOptions } = await getAllDeals(
+              workspaceGID,
+              userGID,
+              projectGID,
+              teamGID,
+              tagsObj
+            );
+            switch (dealOptions) {
+              case `How many trade steps are left on ${selectedDeal}?`:
+                console.log("Getting number of incomplete trade steps...");
+                break;
+              case `Who are the brokers/operations people assigned to ${selectedDeal}?`:
+                console.log(
+                  "Getting brokers/operations people assigned to this deal..."
+                );
+                break;
+              case `Show me the term sheet for ${selectedDeal}.`:
+                console.log("Getting term sheet...");
+                break;
+              case `Sign a document for ${selectedDeal}.`:
+                console.log(
+                  `A document has been signed for ${selectedDeal}, marking appropriate trade step complete...`
+                );
+                break;
+              case `Notify the issuer for ${selectedDeal}.`:
+                console.log(
+                  `Issuer has been noticed for the ${selectedDeal} deal, ROFR period starts now. `
+                );
+                break;
+              default:
+                console.log(
+                  `\x1b[31m  ${selectedDeal} Option is not supported\x1b[0m`
+                );
+                break;
+            }
 
-// {
-//     "data": {
-//       "currency_code": "EUR",
-//       "custom_label": "gold pieces",
-//       "custom_label_position": "suffix",
-//       "description": "Development team priority",
-//       "enabled": true,
-//       "enum_options": [
-//         {
-//           "color": "blue",
-//           "enabled": true,
-//           "name": "Low"
-//         }
-//       ],
-//       "enum_value": {
-//         "color": "blue",
-//         "enabled": true,
-//         "name": "Low"
-//       },
-//       "format": "custom",
-//       "has_notifications_enabled": true,
-//       "multi_enum_values": [
-//         {
-//           "color": "blue",
-//           "enabled": true,
-//           "name": "Low"
-//         }
-//       ],
-//       "name": "Status",
-//       "number_value": 5.2,
-//       "precision": 2,
-//       "resource_subtype": "text",
-//       "text_value": "Some Value",
-//       "workspace": "1331"
-//     }
-//   }
+            let nextChoice = await promptUser.dealSpecificContinue();
+            if (nextChoice === "Perform another operation.") {
+              anotherOperation === true;
+              // I am failing right here, I need to include this code in my getAllDeals function
+              // return;
+            } else if (nextChoice === "Go back.") {
+              await prompts(
+                workspaceGID,
+                userGID,
+                projectGID,
+                teamGID,
+                tagsObj
+              );
+              anotherOperation === false;
+              return;
+            } else {
+              console.log("Exiting...");
+              exit();
+            }
+          }
 
-// const body = {
-//   data: {
-//     currency_code: "EUR",
+          break;
+        case "Get all deals in a section.":
+          const asanaSection = new Section();
+          const sections = await asanaSection.getSectionsByProject(projectGID);
+          const [choiceArray, choiceObj] = choices(sections);
+          let answers = await inquirer.prompt([
+            {
+              type: "list",
+              name: "section",
+              message: "What section did you want to select?",
+              choices: choiceArray,
+            },
+          ]);
+          const sectionName = answers.section;
+          const sectionGID = choiceObj[answers.section];
+          console.log(`Getting all tasks in ${sectionName}...`);
+          console.table(await asanaSection.getTasksInSection(sectionGID), [
+            "name",
+            "completed",
+            "assignee",
+          ]);
+          break;
+        case "Listen for changes in Asana.":
+          const asanaWebhook = new Webhook();
+          asanaWebhook.createWebhook(projectGID);
+          break;
+        case "Exit.":
+          getAndDeleteWebhooks();
+          exit();
+          break;
+        default:
+          console.log("Unknown interaction: " + nextInteraction);
+      }
+    }
+  } catch (error) {
+    console.log(error);
+  }
+}
 
-//     description: "Development team resting custom fields",
-//     enabled: true,
-//     format: "currency",
+async function getAllDeals(
+  workspaceGID = process.env.WORKSPACE_GID,
+  userGID = process.env.ME_GID,
+  projectGID = process.env.PROJECT_GID,
+  teamGID = ENG_TEAM_GID,
+  tagsObj
+) {
+  console.log("Getting all deals...");
+  const asanaTask = new Task();
+  const deals = await asanaTask.getTaskByProject(projectGID);
+  console.table(deals, ["name", "completed", "assignee"]);
+  const [dealChoiceArray, dealChoiceObj] = UserPrompts.choices(deals);
+  const selectedDeal = await promptUser.selectDeal(dealChoiceArray);
+  if (selectedDeal === "Go back.") {
+    await prompts(workspaceGID, userGID, projectGID, teamGID, tagsObj);
+    return;
+  }
+  // const dealName = `\x1b[4m${selectedDeal}\x1b[0m`;
+  const dealGID = dealChoiceObj[selectedDeal];
+  const dealOptions = await promptUser.dealSpecific(selectedDeal);
 
-//     name: "Money",
-//     precision: 2,
-//     resource_subtype: "number",
-//     workspace: "1111138376302363",
-//   },
-// };
-
-// {
-//     "data": {
-//       "actions": [
-//         {
-//           "data": {
-//             "assignee": "me",
-//             "workspace": "1111138376302363"
-//           },
-//           "method": "get",
-//           "options": {
-//             "fields": [
-//               "name",
-//               "notes",
-//               "completed"
-//             ],
-//             "limit": 3
-//           },
-//           "relative_path": "/tasks/1202504629382865"
-//         }
-//       ]
-//     }
-//   }
+  return { selectedDeal, dealGID, dealOptions };
+}
+module.exports = { getAllDeals, prompts, initAsanaEnv };
