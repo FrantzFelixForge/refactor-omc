@@ -16,10 +16,11 @@ const { exit } = require("process");
 
 const promptUser = new UserPrompts();
 async function initAsanaEnv() {
-  console.log(
-    "Fetching information about workspace, team, project, tags and current user..."
-  );
   try {
+    await promptUser.welcomePrompt();
+    console.log(
+      "Fetching information about workspace, team, project, tags and current user..."
+    );
     const asanaWorkspace = new Workspace();
     const workspace = await asanaWorkspace.getForgeWorkspace();
     const workspaceGID = workspace.gid || process.env.WORKSPACE_GID;

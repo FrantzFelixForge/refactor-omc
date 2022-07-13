@@ -17,7 +17,15 @@ class UserPrompts {
     return [choiceArray, choiceObj];
   }
 
-  async welcomePrompt() {}
+  async welcomePrompt() {
+    try {
+      let rendered = await art.font("ASANA-CLI", "doom").completed();
+      console.log(`\x1b[31m${rendered}\x1b[0m`);
+      return rendered;
+    } catch (err) {
+      console.log(err);
+    }
+  }
 
   async mainMenu() {
     let answers = await inquirer.prompt([
