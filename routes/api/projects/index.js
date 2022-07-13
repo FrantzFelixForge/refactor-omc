@@ -23,4 +23,34 @@ router.get("/", async function (req, res) {
   }
 });
 
+router.post("/addCustomField", async function (req, res) {
+  //
+  const newField = {
+    data: {
+      custom_field: `${req.body.customFieldGID}`,
+      is_important: true,
+    },
+  };
+  try {
+    const response = await fetch(
+      `https://app.asana.com/api/1.0/projects/${req.body.projectGID}/addCustomFieldSetting`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.PERSONAL_ACCESS_TOKEN}`,
+        },
+        body: JSON.stringify(newField),
+      }
+    );
+    const data = await response.json();
+
+    //console.log(data);
+    res.status(201).json(data);
+  } catch (err) {
+    console.error(err);
+    res.status(400).json(err);
+  }
+});
+
 module.exports = router;
