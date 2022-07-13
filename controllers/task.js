@@ -159,7 +159,7 @@ class Task {
         } else if (i === 0) {
           sellerTitle = seller;
         } else {
-          sellerTitle = `${sellerTitle} +` + seller;
+          sellerTitle = `${sellerTitle} + ` + seller;
         }
       }
       const usersOnTeam = await new User().getUsersByTeam();
@@ -195,7 +195,6 @@ class Task {
               project: `${process.env.PROJECT_GID}`,
             },
           ],
-          parent: null,
           workspace: `${process.env.WORKSPACE_GID}`,
           tags: [tagsObj["__DEAL__"]],
           custom_fields: {},
