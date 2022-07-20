@@ -21,7 +21,7 @@ class Project {
         }
       }
     } catch (error) {
-      console.log(error);
+      return error;
     }
   }
 }

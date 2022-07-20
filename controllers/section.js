@@ -8,29 +8,33 @@ class Section {
     }).useAccessToken(process.env.PERSONAL_ACCESS_TOKEN);
   }
 
-  /* GET /stories/{section_gid} */
+  /* GET /sections/:section_gid */
   async getSection(sectionGID) {
-    const { data } = await this.client.sections.getSection(sectionGID, {
-      opt_fields: "name",
-    });
-    return data;
+    try {
+      const { data } = await this.client.sections.getSection(sectionGID, {
+        opt_fields: "name",
+      });
+
+      return data;
+    } catch (error) {
+      // console.log(error.value.errors[0]);
+      return error;
+    }
   }
 
   async getSectionsByProject(projectGID = process.env.PROJECT_GID) {
-    const { data } = await this.client.sections.getSectionsForProject(
-      projectGID,
-      {
-        opt_fields: "name",
-      }
-    );
+    try {
+      const { data } = await this.client.sections.getSectionsForProject(
+        projectGID,
+        {
+          opt_fields: "name",
+        }
+      );
 
-    return data;
-  }
-  async getTasksInSection(sectionGID) {
-    const { data } = await this.client.tasks.getTasksForSection(sectionGID, {
-      opt_fields: "tags.name, name, completed, assignee.name",
-    });
-    return data;
+      return data;
+    } catch (error) {
+      return error;
+    }
   }
 }
 

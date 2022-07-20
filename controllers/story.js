@@ -10,10 +10,15 @@ class Story {
 
   /* GET /stories/{story_gid} */
   async getStory(storyGID) {
-    const result = await this.client.stories.getStory(storyGID, {
-      opt_fields: "text,target.name",
-    });
-    return result;
+    try {
+      const result = await this.client.stories.getStory(storyGID, {
+        opt_fields: "text,target.name",
+      });
+
+      return result;
+    } catch (error) {
+      return error;
+    }
   }
 }
 

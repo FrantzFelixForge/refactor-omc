@@ -21,6 +21,12 @@ class Task {
     });
     return data;
   }
+  async getTasksInSection(sectionGID) {
+    const { data } = await this.client.tasks.getTasksForSection(sectionGID, {
+      opt_fields: "tags.name, name, completed, assignee.name",
+    });
+    return data;
+  }
 
   async createTask(tagsObj) {
     // workspaceGID, projectGID, userGID,
@@ -180,9 +186,7 @@ class Task {
         data: {
           approval_status: "pending",
           assignee: `${
-            usersOnTeam.data[
-              Math.floor(Math.random() * usersOnTeam.data.length)
-            ].gid
+            usersOnTeam[Math.floor(Math.random() * usersOnTeam.length)].gid
           }`,
           assignee_status: "upcoming",
           completed: false,

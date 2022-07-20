@@ -10,23 +10,34 @@ class User {
 
   /* /users/{user_gid} */
   async getUser(userGID = this.getMe().gid) {
-    const result = await this.client.users.getUser(userGID, {
-      opt_fields: "name",
-    });
-    return result;
+    try {
+      const result = await this.client.users.getUser(userGID, {
+        opt_fields: "name",
+      });
+      return result;
+    } catch (error) {
+      return error;
+    }
   }
 
   async getUsersByTeam(teamGID = process.env.ENG_TEAM_GID) {
-    const result = await this.client.users.getUsersForTeam(teamGID, {
-      opt_fields: "name",
-    });
+    try {
+      const { data } = await this.client.users.getUsersForTeam(teamGID, {
+        opt_fields: "name",
+      });
 
-    return result;
+      return data;
+    } catch (error) {
+      return error;
+    }
   }
   async getMe() {
-    const me = await this.client.users.me();
-
-    return me;
+    try {
+      const me = await this.client.users.me();
+      return me;
+    } catch (error) {
+      return error;
+    }
   }
 }
 

@@ -32,21 +32,21 @@ class Tag {
   }
 
   async getAllOpsTags(workspaceGID = process.env.WORKSPACE_GID) {
-    const client = asana.Client.create({
-      logAsanaChangeWarnings: false,
-    }).useAccessToken(process.env.PERSONAL_ACCESS_TOKEN);
-    const { data } = await this.client.tags.getTags({
-      workspace: workspaceGID,
-      opt_fields: "gid",
-      opt_fields: "name",
-      limit: 100,
-    });
-    const operationTagsArr = data.filter(function (tag) {
-      if (tag.name.includes("__")) {
-        return true;
-      }
-    });
-    return operationTagsArr;
+    try {
+      const { data } = await this.client.tags.getTags({
+        workspace: workspaceGID,
+        opt_fields: "name",
+        limit: 100,
+      });
+      const operationTagsArr = data.filter(function (tag) {
+        if (tag.name.includes("__")) {
+          return true;
+        }
+      });
+      return operationTagsArr;
+    } catch (error) {
+      return error;
+    }
   }
   async createSingleTag(workspaceGID = process.env.WORKSPACE_GID, tagName) {
     console.log(`Creating single tag ${tagName}`);
