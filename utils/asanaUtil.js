@@ -13,6 +13,12 @@ const {
   Section,
 } = require("../controllers");
 const { exit } = require("process");
+const fetch = require("node-fetch");
+const path = require("path");
+
+const hellosign = require("hellosign-sdk")({
+  key: process.env.HELLO_SIGN_API_KEY,
+});
 
 const promptUser = new UserPrompts();
 async function initAsanaEnv() {
@@ -65,12 +71,18 @@ async function initAsanaEnv() {
   }
 }
 async function getAndDeleteWebhooks() {
-  const asanaWebhook = new Webhook();
-  const { data } = await asanaWebhook.getWebhooks();
-  for (let i = 0; i < data.length; i++) {
-    const { gid } = data[i];
-    const deletedWebhookMsg = await asanaWebhook.deleteWebhook(gid);
-    console.log(deletedWebhookMsg);
+  console.log("Fetching webhooks for deletion..");
+  try {
+    const asanaWebhook = new Webhook();
+    const { data } = await asanaWebhook.getWebhooks();
+    console.log(data);
+    for (let i = 0; i < data.length; i++) {
+      const { gid } = data[i];
+      const deletedWebhookMsg = await asanaWebhook.deleteWebhook(gid);
+      console.log(deletedWebhookMsg);
+    }
+  } catch (error) {
+    console.log(error, "Webhook deletion failed");
   }
 }
 
@@ -79,7 +91,6 @@ async function prompts(workspaceGID, userGID, projectGID, teamGID, tagsObj) {
     let runAgain = true;
     while (runAgain) {
       const nextInteraction = await promptUser.mainMenu();
-
       switch (nextInteraction) {
         case "Add a deal.":
           console.log("Adding a deal...");
@@ -111,10 +122,127 @@ async function prompts(workspaceGID, userGID, projectGID, teamGID, tagsObj) {
               case `Show me the term sheet for ${selectedDeal}.`:
                 console.log("Getting term sheet...");
                 break;
-              case `Sign a document for ${selectedDeal}.`:
+              case `Send a document for ${selectedDeal}.`:
+                const docType = await promptUser.sendDocumentSelection();
+                // get task's buyers/sellers
+                //get rid of camelcased properties!
+
+                switch (docType) {
+                  case "Purchase Agreement":
+                    try {
+                      const asanaTask = new Task();
+                      const dealInfo = await asanaTask.getTask(dealGID);
+                      const buyerField = dealInfo.custom_fields.filter(
+                        function (field) {
+                          if (field.name === "Buyer") {
+                            return true;
+                          }
+                        }
+                      );
+                      const buyerArr = buyerField[0].display_value.split(",");
+                      const sellerField = dealInfo.custom_fields.filter(
+                        function (field) {
+                          if (field.name === "Seller") {
+                            return true;
+                          }
+                        }
+                      );
+                      const sellerArr = sellerField[0].display_value.split(",");
+                      const documentOptions = createDocument(
+                        buyerArr,
+                        sellerArr,
+                        docType,
+                        selectedDeal,
+                        dealGID
+                      );
+                      await hellosign.signatureRequest.send(documentOptions);
+
+                      console.log("Sending document to all parties");
+                    } catch (error) {
+                      console.log(error);
+                    }
+
+                    break;
+                  case "Client Engagement Agreement":
+                    try {
+                      const asanaTask = new Task();
+                      const dealInfo = await asanaTask.getTask(dealGID);
+                      const buyerField = dealInfo.custom_fields.filter(
+                        function (field) {
+                          if (field.name === "Buyer") {
+                            return true;
+                          }
+                        }
+                      );
+                      const buyerArr = buyerField[0].display_value.split(",");
+                      const sellerField = dealInfo.custom_fields.filter(
+                        function (field) {
+                          if (field.name === "Seller") {
+                            return true;
+                          }
+                        }
+                      );
+                      const sellerArr = sellerField[0].display_value.split(",");
+                      console.log(buyerArr, "All the buyers");
+                      console.log(sellerArr, "All the sellers");
+                      const documentOptions = createDocument(
+                        buyerArr,
+                        sellerArr,
+                        docType,
+                        selectedDeal,
+                        dealGID
+                      );
+                      await hellosign.signatureRequest.send(documentOptions);
+
+                      console.log("Sending document to all parties");
+                    } catch (error) {
+                      console.log(error);
+                    }
+                    break;
+                  case "Stock Transfer Agreement":
+                    try {
+                      const asanaTask = new Task();
+                      const dealInfo = await asanaTask.getTask(dealGID);
+                      const buyerField = dealInfo.custom_fields.filter(
+                        function (field) {
+                          if (field.name === "Buyer") {
+                            return true;
+                          }
+                        }
+                      );
+                      const buyerArr = buyerField[0].display_value.split(",");
+                      const sellerField = dealInfo.custom_fields.filter(
+                        function (field) {
+                          if (field.name === "Seller") {
+                            return true;
+                          }
+                        }
+                      );
+                      const sellerArr = sellerField[0].display_value.split(",");
+                      console.log(buyerArr, "All the buyers");
+                      console.log(sellerArr, "All the sellers");
+                      const documentOptions = createDocument(
+                        buyerArr,
+                        sellerArr,
+                        docType,
+                        selectedDeal,
+                        dealGID
+                      );
+                      await hellosign.signatureRequest.send(documentOptions);
+
+                      console.log("Sending document to all parties");
+                    } catch (error) {
+                      console.log(error);
+                    }
+                    break;
+
+                  default:
+                    break;
+                }
                 console.log(
-                  `A document has been signed for ${selectedDeal}, marking appropriate trade step complete...`
+                  `Sent ${docType} to ${selectedDeal}, updating trade status...`
                 );
+
                 break;
               case `Notify the issuer for ${selectedDeal}.`:
                 console.log(
@@ -145,6 +273,7 @@ async function prompts(workspaceGID, userGID, projectGID, teamGID, tagsObj) {
               return;
             } else {
               console.log("Exiting...");
+              await getAndDeleteWebhooks();
               exit();
             }
           }
@@ -154,7 +283,7 @@ async function prompts(workspaceGID, userGID, projectGID, teamGID, tagsObj) {
           const asanaSection = new Section();
           const sections = await asanaSection.getSectionsByProject(projectGID);
           const [choiceArray, choiceObj] = choices(sections);
-          let answers = await inquirer.prompt([
+          const answers = await inquirer.prompt([
             {
               type: "list",
               name: "section",
@@ -176,11 +305,13 @@ async function prompts(workspaceGID, userGID, projectGID, teamGID, tagsObj) {
           asanaWebhook.createWebhook(projectGID);
           break;
         case "Exit.":
-          getAndDeleteWebhooks();
+          await getAndDeleteWebhooks();
           exit();
           break;
         default:
           console.log("Unknown interaction: " + nextInteraction);
+          await getAndDeleteWebhooks();
+          exit();
       }
     }
   } catch (error) {
@@ -199,6 +330,7 @@ async function getAllDeals(
   const asanaTask = new Task();
   const deals = await asanaTask.getTaskByProject(projectGID);
   console.table(deals, ["name", "completed", "assignee"]);
+  //make into seperate function
   const [dealChoiceArray, dealChoiceObj] = UserPrompts.choices(deals);
   const selectedDeal = await promptUser.selectDeal(dealChoiceArray);
   if (selectedDeal === "Go back.") {
@@ -210,5 +342,52 @@ async function getAllDeals(
   const dealOptions = await promptUser.dealSpecific(selectedDeal);
 
   return { selectedDeal, dealGID, dealOptions };
+}
+
+function createDocument(buyerArr, sellerArr, docType, selectedDeal, dealGID) {
+  console.log("Creating Document...");
+
+  const clientArray = [...buyerArr, ...sellerArr];
+  const signerObjectArray = [];
+  for (let i = 0; i < clientArray.length; i++) {
+    const clientName = clientArray[i];
+    const signerObj = {
+      email_address: `frantz.felix+${clientName.trim("")}@forgeglobal.com`,
+      name: `${clientName}`,
+    };
+    signerObjectArray.push(signerObj);
+  }
+
+  const signing_options = {
+    default_type: "draw",
+    draw: true,
+    type: true,
+    upload: true,
+    phone: false,
+  };
+
+  const field_options = {
+    date_format: "DD - MM - YYYY",
+  };
+
+  var options = {
+    test_mode: true,
+    title: `${docType}`,
+    subject: `The ${docType} we talked about`,
+    message: `Please sign this ${docType} and then we can discuss more. Let me know if you have any questions.`,
+    signers: signerObjectArray,
+
+    file_url: [`${process.env.NGROK_URL}/assets/fakePA.pdf`],
+    metadata: {
+      dealGID: dealGID,
+      dealName: selectedDeal,
+      buyers: buyerArr,
+      seller: sellerArr,
+    },
+    signing_options,
+    field_options,
+  };
+
+  return options;
 }
 module.exports = { getAllDeals, prompts, initAsanaEnv };

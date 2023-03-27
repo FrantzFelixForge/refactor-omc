@@ -3,8 +3,11 @@ const crypto = require("crypto");
 const asana = require(`asana`);
 require(`dotenv`).config();
 const { Task, User, Story, Section } = require("../../../controllers");
+const { HelloSignEventHandler } = require("../../../utils/helloSign");
 
 let secret = "";
+const multer = require("multer");
+const upload = multer({ dest: "uploads/" });
 
 function tagToString(tag) {
   if (tag === "__OPS__") {
@@ -19,6 +22,8 @@ function tagToString(tag) {
     return "\x1b[36missuer\x1b[0m";
   } else if (tag === "__DEAL__") {
     return "\x1b[36mdeal\x1b[0m";
+  } else if (tag === "__DOCUMENT__") {
+    return "\x1b[36mDOCUMENT\x1b[0m";
   } else {
     return "\x1b[31mun-tagged\x1b[0m";
   }
@@ -29,7 +34,7 @@ router.post("/receiveWebhook", async function (req, res) {
   if (req.headers["x-hook-secret"]) {
     console.log("This is a new webhook");
     secret = req.headers["x-hook-secret"];
-    process.env.SECRET = secret;
+    // process.env.SECRET = secret;
     //console.log(secret);
     res.setHeader("X-Hook-Secret", secret);
     res.sendStatus(200);
@@ -167,6 +172,7 @@ router.post("/receiveWebhook", async function (req, res) {
                 // if a sub task is added
                 if (parent?.resource_type === "task") {
                   console.log("\x1b[33m Trade step added. \x1b[0m");
+
                   console.log(
                     `${username} \x1b[1;34m${action}\x1b[0m a \x1b[36m${tagToString(
                       touchedTask?.tags[0]?.name
@@ -226,6 +232,27 @@ router.post("/receiveWebhook", async function (req, res) {
     console.error("Something went wrong with x-hook-signture/secret!");
   }
 });
+router.post(
+  "/receiveWebhookHelloSign",
+  upload.none(),
+  async function (req, res) {
+    //Need to verify sender was hellosign using the event_hash
+    let auth = true;
+    if (auth) {
+      const json = JSON.parse(req.body.json);
+      //need to check if there is currently a request in progress. signature_request_signed and signature_requyest_all_signed might be conflicting becasue they come right after each other and cause this error "An identical request is already being processed."
+      const helloSignHandler = new HelloSignEventHandler(json);
+      await helloSignHandler.handleEvent();
+
+      res.json("Hello API Event Received").status(200);
+      // res.sendStatus(200);
+    } else {
+      console.error("Something went wrong with auth!");
+    }
+  }
+);
+
+router.post("/slackWebhook");
 
 module.exports = router;
 

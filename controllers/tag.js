@@ -67,12 +67,13 @@ class Tag {
       "__LEGAL__",
       "__OPS__",
       "__DEAL__",
+      "__DOCUMENT__",
     ];
     tagObjArray.forEach(function (tag) {
       currentTagArray.push(tag.name);
     });
     //delete if I don't have all the tags
-    if (currentTagArray.length < 6) {
+    if (currentTagArray.length < 7) {
       console.log("Some tags are missing, recreating now...");
       for (let i = 0; i < tagObjArray.length; i++) {
         const { gid } = tagObjArray[i];

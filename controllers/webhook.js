@@ -24,7 +24,7 @@ class Webhook {
         {
           action: "changed",
           resource_type: "task",
-          // fields: ["completed", "custom_fields", "name"],
+          fields: ["completed", "custom_fields", "name"],
         },
         {
           action: "added",

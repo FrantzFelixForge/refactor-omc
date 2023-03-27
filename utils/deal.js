@@ -21,7 +21,7 @@ class Deal {
       "Eric",
       "Stephanie",
       "Melissa",
-      "Candance",
+      "Candace",
       "Jean",
     ];
     this.buyerArray = [
@@ -85,6 +85,12 @@ class Deal {
       "morgan.fogarty@forgeglobal.com",
       "Naresh Sikha",
     ];
+    this.operationsIssuerMap = {
+      "Frantz Felix": ["SpaceX", "Postmates", "Robinhood"],
+      "Pete Van Wesep": ["DigitalOcean", "Coursera", "Netlify"],
+      "morgan.fogarty@forgeglobal.com": ["Kraken", "Airbnb", "Plaid"],
+      "Naresh Sikha": ["JUUL", "Automation Anywhere"],
+    };
     this.dealTypeArray = [
       "Fund Direct",
       "Direct",
@@ -99,23 +105,9 @@ class Deal {
       "T29-3989-A",
       "F21-1201-A",
     ];
-    this.buyerStatusArray = [
-      "Filling out CEA",
-      "Filling out Fund Documents",
-      "Wiring out Funds",
-      "Filling out Commission Agreement",
-      "Filling out Purchase Agreement",
-    ];
-    this.sellerStatusArray = [
-      "Filling out CEA",
-      "Filling out Fund Documents",
-      "Waiting for Funds",
-      "Filling out Commission Agreement",
-      "Filling out Purchase Agreement",
-    ];
+
     this.atypicalArray = [
       "New Issuer",
-      //   "Hong Kong",
       "Offering",
       "Foreign LP Units",
       "ROFR'd",
@@ -130,6 +122,7 @@ class Deal {
     this.wireAmount = this.totalPrice + this.commission;
     this.numOfBuyers = Math.floor(Math.random() * 3) + 1;
     this.numOfSellers = Math.floor(Math.random() * 3) + 1;
+    this.termSheetURL = "http://www.africau.edu/images/default/sample.pdf";
   }
 
   static randomArrayElement(array) {
@@ -156,11 +149,15 @@ class Deal {
       }
     }
 
+    const opsAssociate = `${Deal.randomArrayElement(this.operationsArray)}`;
+    const issuer = Deal.randomArrayElement(
+      this.operationsIssuerMap[opsAssociate]
+    );
     const dealInfo = {
       id: `${Deal.randomArrayElement(this.dealIdArray)}`,
-      issuer: `${Deal.randomArrayElement(this.issuerArray)}`,
+      issuer: issuer,
       broker: `${Deal.randomArrayElement(this.brokerArray)}`,
-      operations: `${Deal.randomArrayElement(this.operationsArray)}`,
+      operations: opsAssociate,
       buyer: buyers,
       seller: sellers,
       atypical: `${Deal.randomArrayElement(this.atypicalArray)}`,
@@ -171,8 +168,9 @@ class Deal {
       commission: this.commission,
       wireAmount: this.wireAmount,
       rofrDate: "N/A",
-      buyerStatus: `${Deal.randomArrayElement(this.buyerStatusArray)}`,
-      sellerStatus: `${Deal.randomArrayElement(this.sellerStatusArray)}`,
+      buyerStatus: "N/A",
+      sellerStatus: "N/A",
+      termSheetURL: this.termSheetURL,
     };
 
     return dealInfo;

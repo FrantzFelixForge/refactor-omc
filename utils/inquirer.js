@@ -66,8 +66,8 @@ class UserPrompts {
           `Who are the brokers/operations people assigned to ${dealName}?`,
           // `Who is being notified (brokers/operations) when updates occur on ${dealName} ?`,
           // `Turn on notifications for ${dealName} .`,
-          `Show me the term sheet for ${dealName}.`,
-          `Sign a document for ${dealName}.`,
+          // `Show me the term sheet for ${dealName}.`,
+          `Send a document for ${dealName}.`,
           `Notify the issuer for ${dealName}.`,
         ],
       },
@@ -109,6 +109,33 @@ class UserPrompts {
     ]);
     return answers.deal;
   }
+  async sendDocumentSelection() {
+    let answers = await inquirer.prompt([
+      {
+        type: "list",
+        name: "document",
+        message: "What document did you want to send?",
+        choices: [
+          "Purchase Agreement",
+          "Client Engagement Agreement",
+          "Stock Transfer Agreement",
+          "Go Back",
+        ],
+      },
+    ]);
+    return answers.document;
+  }
+  // async clientToReceiveDoc(clientsArray) {
+  //   let answers = await inquirer.prompt([
+  //     {
+  //       type: "list",
+  //       name: "client",
+  //       message: "Who did you want to send it to?",
+  //       choices: clientsArray,
+  //     },
+  //   ]);
+  //   return answers.client;
+  // }
 }
 
 module.exports = { UserPrompts };

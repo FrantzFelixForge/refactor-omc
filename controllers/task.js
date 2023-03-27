@@ -10,10 +10,16 @@ class Task {
   }
 
   async getTask(taskGID) {
-    const { data } = await this.client.tasks.getTask(taskGID, {
-      opt_fields: "tags.name, name, parent, completed",
-    });
-    return data;
+    try {
+      const data = await this.client.tasks.getTask(taskGID, {
+        opt_fields:
+          "notes,num_subtasks, completed, assignee.name, parent,completed,name,custom_fields.name,custom_fields.display_value,tags.name,",
+      });
+
+      return data;
+    } catch (error) {
+      return error;
+    }
   }
   async getTaskByProject(projectGID = process.env.PROJECT_GID) {
     const { data } = await this.client.tasks.getTasksForProject(projectGID, {
@@ -30,10 +36,10 @@ class Task {
       const customFieldGIDs = {
         "Deal Type": "1202448385422158",
         "Broker 1": "1202453210511646",
-        "Broker 2": "?",
-        "Broker 3": "?",
+        "Broker 2": "1200040173671301",
+        "Broker 3": "1202453210580711",
         atypical: "1202453210621637",
-        "atypical 2": "?",
+        "atypical 2": "1202453210639703",
         ID: "1202572167088291",
         "Share Quantity": "1202572093555492",
         Total: "1202572166883721",
@@ -45,6 +51,7 @@ class Task {
         Seller: "1202572093347471",
         "Buyer Status": "1202572183549297",
         "Seller Status": "1202572109911073",
+        "Term Sheet": "1202766876015523",
       };
       const dealTypeEnumGIDs = {
         "Fund Direct": "1202448385422159",
@@ -188,7 +195,7 @@ class Task {
           completed: false,
 
           name: `${dealInfo.issuer} | ${sellerTitle}/${buyerTitle} | $${dealInfo.price}`,
-          notes: `Term Sheet notes here`,
+          // notes: `Term Sheet notes here`,
           projects: [`${process.env.PROJECT_GID}`],
           resource_subtype: "default_task",
           memberships: [
@@ -220,19 +227,23 @@ class Task {
         dealInfo.price;
       newDeal.data.custom_fields[customFieldGIDs["Issuer"]] = dealInfo.issuer;
       newDeal.data.custom_fields[customFieldGIDs["Buyer"]] =
-        dealInfo.buyer.join(" ");
+        dealInfo.buyer.join(", ");
       newDeal.data.custom_fields[customFieldGIDs["Seller"]] =
-        dealInfo.seller.join(" ");
+        dealInfo.seller.join(",  ");
       newDeal.data.custom_fields[customFieldGIDs["Buyer Status"]] =
         dealInfo.buyerStatus;
       newDeal.data.custom_fields[customFieldGIDs["Seller Status"]] =
         dealInfo.sellerStatus;
+      newDeal.data.custom_fields[customFieldGIDs["Term Sheet"]] =
+        dealInfo.termSheetURL;
 
       const dealAdded = await this.client.tasks.createTask(newDeal.data);
       const tradeStepsAdded = await this.addSubTasks(
         dealAdded.gid,
         tagsObj,
-        dealInfo.type
+        dealInfo.type,
+        dealInfo.buyer,
+        dealInfo.seller
       );
       return { dealAdded, tradeStepsAdded };
     } catch (error) {
@@ -241,12 +252,26 @@ class Task {
     }
   }
 
-  async addSubTasks(taskGID, tagsObj, dealType) {
+  async addSubTasks(taskGID, tagsObj, dealType, buyerArr, sellerArr) {
     let subTaskArray = "";
 
     switch (dealType) {
       case "Fund Direct":
         subTaskArray = [
+          {
+            tagName: "__DOCUMENT__",
+            tagGid: "",
+            name: "Purchase Agreement - BUYER",
+            insert_after: null,
+            subTaskGid: "",
+          },
+          {
+            tagName: "__DOCUMENT__",
+            tagGid: "",
+            name: "Purchase Agreement - SELLER",
+            insert_after: ``,
+            subTaskGid: "",
+          },
           {
             tagName: "__OPS__",
             tagGid: "",
@@ -385,10 +410,39 @@ class Task {
       case "Direct":
         subTaskArray = [
           {
+            tagName: "__DOCUMENT__",
+            tagGid: "",
+            name: "Purchase Agreement - BUYER",
+            insert_after: null,
+            subTaskGid: "",
+          },
+          {
+            tagName: "__DOCUMENT__",
+            tagGid: "",
+            name: "Purchase Agreement - SELLER",
+            insert_after: ``,
+            subTaskGid: "",
+          },
+          // {
+          //   tagName: "__DOCUMENT__",
+          //   tagGid: "",
+          //   name: "Client Engagement Agreement - BUYER",
+          //   insert_after: null,
+          //   subTaskGid: "",
+          // },
+          // {
+          //   tagName: "__DOCUMENT__",
+          //   tagGid: "",
+          //   name: "Client Engagement Agreement - SELLER",
+          //   insert_after: ``,
+          //   subTaskGid: "",
+          // },
+
+          {
             tagName: "__BUYER__",
             tagGid: "",
             name: "Buy-side agent agreement signed",
-            insert_after: null,
+            insert_after: ``,
             subTaskGid: "",
           },
           {
@@ -666,6 +720,20 @@ class Task {
       case "Redemption":
         subTaskArray = [
           {
+            tagName: "__DOCUMENT__",
+            tagGid: "",
+            name: "Purchase Agreement - BUYER",
+            insert_after: null,
+            subTaskGid: "",
+          },
+          {
+            tagName: "__DOCUMENT__",
+            tagGid: "",
+            name: "Purchase Agreement - SELLER",
+            insert_after: ``,
+            subTaskGid: "",
+          },
+          {
             tagName: "__OPS__",
             tagGid: "",
             name: "Send buy-side order documents",
@@ -800,10 +868,24 @@ class Task {
         );
         subTaskArray = [
           {
+            tagName: "__DOCUMENT__",
+            tagGid: "",
+            name: "Purchase Agreement - BUYER",
+            insert_after: null,
+            subTaskGid: "",
+          },
+          {
+            tagName: "__DOCUMENT__",
+            tagGid: "",
+            name: "Purchase Agreement - SELLER",
+            insert_after: "",
+            subTaskGid: "",
+          },
+          {
             tagName: "__OPS__",
             tagGid: "",
             name: "Assign yourself to the trade",
-            insert_after: null,
+            insert_after: "",
             subTaskGid: "",
           },
           {
@@ -942,14 +1024,40 @@ class Task {
       const addedSubTasks = [];
       for (let i = 0; i < reverseSubTaskArray.length; i++) {
         const subTask = reverseSubTaskArray[i];
+        /*
+        subTask.tagName.forEach(tag =>{
+          tag.tagGid += `${tagsObj[tag.tagName],}` 
+
+        });        
+        * */
         subTask.tagGid = tagsObj[subTask.tagName];
         let currentSubTask = await this.client.tasks.createSubtaskForTask(
           taskGID,
           {
             name: subTask.name,
             tags: [`${subTask.tagGid}`],
+            // tags: [`${subTask.tagGid.join(',')}`],
           }
         );
+        if (currentSubTask.tags[0].name === "__DOCUMENT__") {
+          if (currentSubTask.name.split(" ").includes("BUYER")) {
+            for (let i = 0; i < buyerArr.length; i++) {
+              const buyer = buyerArr[i];
+              await this.client.tasks.createSubtaskForTask(currentSubTask.gid, {
+                name: buyer,
+                tags: [`${tagsObj["__BUYER__"]}`],
+              });
+            }
+          } else {
+            for (let i = 0; i < sellerArr.length; i++) {
+              const seller = sellerArr[i];
+              await this.client.tasks.createSubtaskForTask(currentSubTask.gid, {
+                name: seller,
+                tags: [`${tagsObj["__SELLER__"]}`],
+              });
+            }
+          }
+        }
         addedSubTasks.push(currentSubTask);
       }
       return addedSubTasks;
@@ -1020,6 +1128,29 @@ class Task {
     //     console.log(error.value.errors);
     //   }
     // }
+  }
+
+  // async addSubSubTasks(taskGID,tagsObj, dealType)
+
+  async getSubTasks(taskGID) {
+    try {
+      const { data } = await this.client.tasks.getSubtasksForTask(taskGID, {
+        opt_fields: "tags.name, name, completed, num_subtasks",
+      });
+      // console.log(data);
+      return data;
+    } catch (error) {
+      return error;
+    }
+  }
+
+  async updateTask(taskGID, body) {
+    try {
+      const data = await this.client.tasks.updateTask(taskGID, body);
+      return data;
+    } catch (error) {
+      return error;
+    }
   }
 }
 

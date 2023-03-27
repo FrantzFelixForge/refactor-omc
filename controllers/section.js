@@ -10,7 +10,7 @@ class Section {
 
   /* GET /stories/{section_gid} */
   async getSection(sectionGID) {
-    const { data } = await this.client.sections.getSection(sectionGID, {
+    const data = await this.client.sections.getSection(sectionGID, {
       opt_fields: "name",
     });
     return data;
